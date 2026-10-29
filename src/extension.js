@@ -262,7 +262,7 @@ class AiMeterIndicator extends PanelMenu.Button {
         const [warn, crit] = this._thresholds();
         const display = this._settings.get_string('panel-display');
 
-        this._icon.visible = this._settings.get_bool('show-icon');
+        this._icon.visible = this._settings.get_boolean('show-icon');
         this._label.remove_style_class_name('ai-meter-warn');
         this._label.remove_style_class_name('ai-meter-crit');
 
@@ -278,7 +278,7 @@ class AiMeterIndicator extends PanelMenu.Button {
             } else {
                 text = `${s.percent}%`;
             }
-            if (this._settings.get_bool('show-weekly') && usage.weekly)
+            if (this._settings.get_boolean('show-weekly') && usage.weekly)
                 text += ` · ${usage.weekly.percent}%`;
             this._label.text = text;
             this._label.visible = display !== 'bar' || exhausted;
