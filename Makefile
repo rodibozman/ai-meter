@@ -20,8 +20,12 @@ zip: schema
 
 check: lint schema test
 
-lint:
-	npx --yes eslint@9 .
+# eslint at the exact versions of package-lock.json, reinstalled when it changes.
+node_modules/.package-lock.json: package-lock.json
+	npm ci --ignore-scripts --no-audit --no-fund
+
+lint: node_modules/.package-lock.json
+	./node_modules/.bin/eslint .
 	@if command -v shellcheck >/dev/null 2>&1; then shellcheck -s sh install.sh; else echo "shellcheck not found, install.sh not checked"; fi
 
 schema:
