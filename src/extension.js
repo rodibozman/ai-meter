@@ -20,6 +20,12 @@ const MENU_TICK_SECONDS = 30;
 // account, and Claude Code itself polls it: never fetch more often than this.
 const MIN_FETCH_GAP_MS = 30 * 1000;
 
+// St.BoxLayout's `vertical` is deprecated from GNOME 48 in favour of
+// `orientation`, which GNOME 45 to 47 do not have.
+const VERTICAL = St.BoxLayout.find_property('orientation')
+    ? {orientation: Clutter.Orientation.VERTICAL}
+    : {vertical: true};
+
 const COLORS = {
     ok: [0.21, 0.52, 0.89],    // GNOME blue 3
     warn: [0.96, 0.76, 0.07],  // GNOME yellow 3
@@ -88,7 +94,7 @@ const MeterItem = GObject.registerClass(
 class AiMeterMeterItem extends PopupMenu.PopupBaseMenuItem {
     _init() {
         super._init({reactive: false, can_focus: false});
-        const box = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'ai-meter-meter'});
+        const box = new St.BoxLayout({...VERTICAL, x_expand: true, style_class: 'ai-meter-meter'});
         const row = new St.BoxLayout({x_expand: true});
         this._name = new St.Label({style_class: 'ai-meter-meter-name', x_expand: true});
         this._pct = new St.Label({style_class: 'ai-meter-meter-pct'});
