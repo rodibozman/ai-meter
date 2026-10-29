@@ -11,14 +11,29 @@ export const RATE_LIMIT_MIN_SECONDS = 60;
 
 /**
  * The state of the polling loop. It belongs to the extension, not to the
- * indicator, so that recreating the indicator (position change, lock
- * screen) keeps the last values, the minimum gap, a Retry-After and the
- * backoff: a burst of fetches would hit the rate limit shared with Claude
- * Code. `usage`/`plan`/`error`/`fetchedAt` describe the last fetch,
+ * indicator, so that recreating the indicator on a position change keeps
+ * the last values, the minimum gap, a Retry-After and the backoff: a burst
+ * of fetches would hit the rate limit shared with Claude Code.
+ * `usage`/`plan`/`error`/`fetchedAt` describe the last fetch,
  * `lastAttempt`/`nextTry` are ms timestamps (0 = never), `backoff` seconds.
+ * `timing` (from pollTiming) carries those three over from a previous state.
  */
-export function newPollState() {
-    return {usage: null, plan: '', error: null, fetchedAt: 0, lastAttempt: 0, nextTry: 0, backoff: 0};
+export function newPollState(timing = {}) {
+    return {
+        usage: null, plan: '', error: null, fetchedAt: 0,
+        lastAttempt: timing.lastAttempt ?? 0,
+        nextTry: timing.nextTry ?? 0,
+        backoff: timing.backoff ?? 0,
+    };
+}
+
+/**
+ * The part of a state that outlives disable() (the lock screen disables the
+ * extension): three numbers, so an unlock keeps the minimum gap and a
+ * Retry-After, while the fetched data is dropped.
+ */
+export function pollTiming(state) {
+    return {lastAttempt: state.lastAttempt, nextTry: state.nextTry, backoff: state.backoff};
 }
 
 /**

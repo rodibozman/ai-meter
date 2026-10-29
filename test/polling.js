@@ -1,7 +1,7 @@
 // Offline tests of src/polling.js, the decisions behind the refresh loop:
 // `gjs -m test/polling.js` from the repo root.
 import {
-    severity, fetchWait, retryAfterError, newPollState, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
+    severity, fetchWait, retryAfterError, newPollState, pollTiming, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
 } from '../src/polling.js';
 import {assert, assertEqual, main} from './harness.js';
 
@@ -24,6 +24,16 @@ main(() => {
     assert(initialDelay({...fetched, fetchedAt: now - 500}, 120, now) === 120, 'rounds up to whole seconds');
     assert(initialDelay({...fetched, fetchedAt: now - 120_000}, 120, now) === 0, 'data as old as the interval: fetch now');
     assert(initialDelay({...fetched, fetchedAt: now - 3_600_000}, 120, now) === 0, 'stale data: fetch now');
+
+    // disable() keeps only the timing: data dropped, gap and Retry-After kept.
+    const used = {usage: {session: {}}, plan: 'Max 5x', error: new Error('x'), fetchedAt: now - 5_000, lastAttempt: now - 5_000, nextTry: now + 200_000, backoff: 240};
+    assertEqual(pollTiming(used), {lastAttempt: now - 5_000, nextTry: now + 200_000, backoff: 240}, 'timing is the three numbers');
+    const resumed = newPollState(pollTiming(used));
+    assertEqual(resumed, {usage: null, plan: '', error: null, fetchedAt: 0, lastAttempt: now - 5_000, nextTry: now + 200_000, backoff: 240}, 'resumed state has no data');
+    assert(initialDelay(resumed, 120, now) === 0, 'resumed indicator tries at once');
+    assert(fetchWait(resumed, now) === 200_000, 'and that try still waits for the Retry-After');
+    assert(fetchWait(newPollState(pollTiming({...used, nextTry: 0})), now) === MIN_FETCH_GAP_MS - 5_000, 'or for the rest of the minimum gap');
+    assertEqual(pollTiming(newPollState()), {lastAttempt: 0, nextTry: 0, backoff: 0}, 'fresh timing is zero');
 
     // Minimum gap between two calls, and a Retry-After or backoff still running.
     assert(fetchWait({nextTry: 0, lastAttempt: 0}, now) === 0, 'first fetch goes now');
