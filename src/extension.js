@@ -242,6 +242,10 @@ class AiMeterIndicator extends PanelMenu.Button {
             this._backoff = 0;
             next = this._settings.get_int('refresh-interval');
         } catch (e) {
+            // destroy() aborted the request (disable, lock screen, position
+            // change): not an error worth a log line or a retry.
+            if (this._destroyed)
+                return;
             this._state.error = e;
             const kind = e.kind ?? 'unknown';
             if (kind !== 'no-credentials' && kind !== 'expired')
