@@ -1,0 +1,57 @@
+.ai-meter-panel-box {
+  spacing: 5px;
+}
+
+.ai-meter-panel-label {
+  font-weight: bold;
+  font-feature-settings: "tnum";
+}
+
+.ai-meter-warn {
+  color: #f5c211;
+}
+
+.ai-meter-crit {
+  color: #ed333b;
+}
+
+.ai-meter-menu-header {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.ai-meter-menu-plan {
+  opacity: 0.7;
+}
+
+.ai-meter-meter {
+  min-width: 300px;
+  spacing: 4px;
+}
+
+.ai-meter-meter-name {
+  font-weight: bold;
+}
+
+.ai-meter-meter-pct {
+  font-weight: bold;
+  font-feature-settings: "tnum";
+}
+
+.ai-meter-meter-reset {
+  font-size: 0.9em;
+  opacity: 0.7;
+}
+
+.ai-meter-menu-message {
+  font-style: italic;
+}
+
+.ai-meter-footer {
+  spacing: 8px;
+}
+
+.ai-meter-footer-text {
+  font-size: 0.9em;
+  opacity: 0.7;
+}

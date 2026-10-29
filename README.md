@@ -1,2 +1,79 @@
-# ai-meter
-GNOME Shell extension that shows your Claude Pro/Max usage (5-hour session and weekly limits) in the top bar, next to the clock and battery.
+# AI Meter
+
+GNOME Shell extension that shows your Claude Pro/Max usage in the top bar, next to the clock and battery.
+
+- **In the bar**: the 5-hour window as a percentage (optionally a small bar too). Amber from 70 %, red from 90 %, and a countdown to the reset once the window is used up.
+- **On click**: the 5-hour window, the weekly limit, the per-model weekly limits when your plan has them, extra usage spend when enabled, each with a progress bar and its reset time, like the Claude Code VS Code extension's usage panel.
+- **No setup**: it reuses the login of [Claude Code](https://docs.claude.com/en/docs/claude-code) on this machine. No API key, no extra sign-in.
+
+Works on GNOME Shell 45 to 49 (Ubuntu 24.04 and later).
+
+## Install
+
+One line, no clone needed:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/rodibozman/ai-meter/main/install.sh | sh
+```
+
+Or from a clone:
+
+```sh
+git clone https://github.com/rodibozman/ai-meter.git
+cd ai-meter
+make install
+```
+
+Then **log out and back in** (GNOME on Wayland cannot reload extensions live). On an X11 session, `Alt+F2`, `r`, `Enter` is enough.
+
+Requirements: `gnome-shell`, `glib-compile-schemas` (package `libglib2.0-dev-bin` on Ubuntu) and Claude Code signed in at least once (`claude` in a terminal).
+
+You can also download the zip from the [Releases](https://github.com/rodibozman/ai-meter/releases) page and run `gnome-extensions install --force <zip>`.
+
+## Settings
+
+Click the indicator, then **Settings** (or use the Extensions app):
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Show | Percentage | Percentage, a small bar, or both, in the top bar |
+| Show icon | on | The gauge icon before the number |
+| Also show the weekly percentage | off | `12% · 40%` instead of `12%` |
+| Position | 0 | Slot in the right-hand cluster of the bar, 0 = leftmost |
+| Amber from / Red from | 70 / 90 | Color thresholds |
+| Refresh every | 60 s | Poll interval. The dropdown also refreshes when opened |
+| Credentials file | `~/.claude/.credentials.json` | Where Claude Code stores its login |
+
+## How it works
+
+Claude Code stores an OAuth token in `~/.claude/.credentials.json` when you sign in. AI Meter reads that token and calls the same usage endpoint the `/usage` command of Claude Code calls, `https://api.anthropic.com/api/oauth/usage`. Nothing is written back, and nothing else leaves your machine.
+
+When the token expires, the bar shows `expired`: open Claude Code (run `claude` in a terminal) and it renews the file; the meter picks it up on the next refresh. If the file is missing, the bar shows `no login`.
+
+## Troubleshooting
+
+- Logs: `journalctl -f -o cat /usr/bin/gnome-shell | grep ai-meter`
+- Live check of the data path, without the Shell: `gjs -m test/fetch.js`
+- The extension refuses to load after a GNOME upgrade: check that your `gnome-shell --version` is listed in `src/metadata.json`.
+
+## Development
+
+```sh
+make check   # eslint, schema validation, unit tests (needs gjs)
+make zip     # dist/ai-meter@rodibozman.github.io.shell-extension.zip
+make uninstall
+```
+
+Sources live in `src/`. `usage.js` (fetch and parse) has no Shell dependency, so `gjs -m test/parse.js` runs it offline.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
+
+### Continuous integration
+
+`ci.yml` is the GitHub Actions workflow (lint, schema check, gjs tests, zip artifact, and a GitHub release on `v*` tags). The bot that opened the initial PR cannot write under `.github/workflows/`, so move it yourself once:
+
+```sh
+mkdir -p .github/workflows && git mv ci.yml .github/workflows/ci.yml && git commit -m "Enable CI"
+```
