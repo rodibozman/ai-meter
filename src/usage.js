@@ -19,7 +19,7 @@ export function defaultCredentialsPath() {
  * Error raised by this module. `kind` is one of:
  * 'no-credentials' (file missing or unreadable), 'bad-credentials'
  * (no OAuth token in it), 'expired' (server rejected the token),
- * 'rate-limited', 'http', 'network', 'parse'.
+ * 'rate-limited' (with `retryAfter` in seconds), 'http', 'network', 'parse'.
  */
 export class UsageError extends Error {
     constructor(kind, message) {
@@ -204,17 +204,23 @@ export async function fetchUsage(session, credentialsPath) {
     } catch (e) {
         throw new UsageError('network', e.message);
     }
-    const status = msg.get_status();
+    // `status_code` is a plain integer; `get_status()` throws in GJS on codes
+    // missing from the Soup.Status enum (429 is one of them).
+    const status = msg.status_code;
     if (status === 401 || status === 403) {
         const stale = creds.expiresAt > 0 && Date.now() > creds.expiresAt;
         throw new UsageError('expired', stale
             ? 'Claude Code login expired: run claude in a terminal to renew it'
             : `login rejected (HTTP ${status})`);
     }
-    if (status === 429)
-        throw new UsageError('rate-limited', 'too many requests, backing off');
+    if (status === 429) {
+        const retry = Number.parseInt(msg.response_headers.get_one('Retry-After') ?? '', 10);
+        const err = new UsageError('rate-limited', 'rate limited by the usage API');
+        err.retryAfter = Number.isFinite(retry) && retry > 0 ? retry : 300;
+        throw err;
+    }
     if (status < 200 || status >= 300)
-        throw new UsageError('http', `HTTP ${status} ${msg.get_reason_phrase() ?? ''}`.trim());
+        throw new UsageError('http', `HTTP ${status} ${msg.reason_phrase ?? ''}`.trim());
 
     let data;
     try {
