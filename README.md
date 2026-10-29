@@ -2,6 +2,8 @@
 
 GNOME Shell extension that shows your Claude Pro/Max usage in the top bar, next to the clock and battery.
 
+![AI Meter in the top bar, with the usage dropdown open](docs/screenshot.png)
+
 - **In the bar**: the 5-hour window as a percentage (optionally a small bar too). Amber from 70 %, red from 90 %, and a countdown to the reset once the window is used up.
 - **On click**: the 5-hour window, the weekly limit, the per-model weekly limits when your plan has them, extra usage spend when enabled, each with a progress bar and its reset time, like the Claude Code VS Code extension's usage panel.
 - **No setup**: it reuses the login of [Claude Code](https://docs.claude.com/en/docs/claude-code) on this machine. No API key, no extra sign-in.
