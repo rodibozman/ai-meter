@@ -85,7 +85,7 @@ function isoToMs(iso) {
 function clampPercent(v) {
     if (v === null || v === undefined || Number.isNaN(Number(v)))
         return null;
-    return Math.max(0, Math.round(Number(v)));
+    return Math.min(100, Math.max(0, Math.round(Number(v))));
 }
 
 function fromPeriod(p, name) {
