@@ -14,10 +14,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
       - name: Install GJS and GLib tools
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gjs gir1.2-soup-3.0 libglib2.0-dev-bin zip shellcheck
       - name: Lint
-        run: npx --yes eslint@9 .
+        run: npm ci --ignore-scripts --no-audit --no-fund && ./node_modules/.bin/eslint .
       - name: Lint the installer
         run: shellcheck -s sh install.sh
       - name: Validate settings schema
