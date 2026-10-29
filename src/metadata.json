@@ -2,7 +2,7 @@
   "uuid": "ai-meter@rodibozman.github.io",
   "name": "AI Meter",
   "description": "Shows your Claude Pro/Max usage (5-hour window and weekly limits) in the top bar, with a detail panel on click. Reuses the login of Claude Code on this machine; no API key needed.",
-  "version-name": "0.1.1",
+  "version-name": "0.1.2",
   "shell-version": ["45", "46", "47", "48", "49"],
   "url": "https://github.com/rodibozman/ai-meter",
   "settings-schema": "org.gnome.shell.extensions.ai-meter"
