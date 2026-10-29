@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <enum id="org.gnome.shell.extensions.ai-meter.panel-display">
+    <value nick="percent" value="0"/>
+    <value nick="bar" value="1"/>
+    <value nick="both" value="2"/>
+  </enum>
+  <schema id="org.gnome.shell.extensions.ai-meter" path="/org/gnome/shell/extensions/ai-meter/">
+    <key name="refresh-interval" type="i">
+      <range min="15" max="3600"/>
+      <default>60</default>
+      <summary>Refresh interval in seconds</summary>
+    </key>
+    <key name="warn-threshold" type="i">
+      <range min="1" max="100"/>
+      <default>70</default>
+      <summary>Usage percentage from which the indicator turns amber</summary>
+    </key>
+    <key name="crit-threshold" type="i">
+      <range min="1" max="100"/>
+      <default>90</default>
+      <summary>Usage percentage from which the indicator turns red</summary>
+    </key>
+    <key name="panel-display" enum="org.gnome.shell.extensions.ai-meter.panel-display">
+      <default>'percent'</default>
+      <summary>What the top bar shows: the percentage, a small bar, or both</summary>
+    </key>
+    <key name="show-icon" type="b">
+      <default>true</default>
+      <summary>Show the icon in the top bar</summary>
+    </key>
+    <key name="show-weekly" type="b">
+      <default>false</default>
+      <summary>Also show the weekly percentage in the top bar</summary>
+    </key>
+    <key name="panel-position" type="i">
+      <range min="0" max="20"/>
+      <default>0</default>
+      <summary>Index in the right part of the top bar (0 = leftmost, next to app indicators)</summary>
+    </key>
+    <key name="credentials-path" type="s">
+      <default>''</default>
+      <summary>Path of Claude Code's credentials file (empty = ~/.claude/.credentials.json)</summary>
+    </key>
+  </schema>
+</schemalist>

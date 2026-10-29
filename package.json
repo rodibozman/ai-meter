@@ -1,0 +1,15 @@
+{
+  "name": "ai-meter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GNOME Shell extension showing Claude usage in the top bar",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "gjs -m test/parse.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "license": "MIT"
+}
