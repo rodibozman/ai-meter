@@ -6,7 +6,7 @@ import Gio from 'gi://Gio';
 import Soup from 'gi://Soup';
 
 export const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
-export const USER_AGENT = 'ai-meter/0.1.0 (+https://github.com/rodibozman/ai-meter)';
+export const USER_AGENT = 'ai-meter/0.1.1 (+https://github.com/rodibozman/ai-meter)';
 
 Gio._promisify(Gio.File.prototype, 'load_contents_async');
 Gio._promisify(Soup.Session.prototype, 'send_and_read_async');
