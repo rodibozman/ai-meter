@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "lint": "eslint .",
-    "test": "gjs -m test/parse.js"
+    "test": "make test"
   },
   "devDependencies": {
     "eslint": "^9.0.0"

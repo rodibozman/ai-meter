@@ -10,9 +10,10 @@ Layout:
 
 - `src/usage.js`: fetch and parse. No GNOME Shell import, so it runs under plain `gjs`.
 - `src/extension.js`: the indicator, the dropdown, the polling loop.
+- `src/polling.js`: the decisions of that loop (minimum gap, backoff, Retry-After, colour thresholds). No Shell import either.
 - `src/prefs.js` and `src/schemas/`: the settings window and its GSettings schema.
 - `install.sh`, `Makefile`, `.github/workflows/ci.yml`: install, checks, release.
-- `test/`: `parse.js` offline, `fetch.js` against the real endpoint.
+- `test/`: `parse.js`, `credentials.js`, `http.js` (local Soup server) and `polling.js` run offline through `make test`; `fetch.js` calls the real endpoint by hand. `harness.js` is the shared assert/main.
 
 ## Commit messages
 
@@ -54,7 +55,7 @@ No `Co-Authored-By` or tool trailers.
 - Style is enforced by `eslint.config.js`: 4 spaces, single quotes, semicolons, `const` by default. Run `npm run lint` or `make lint`.
 - Target GNOME Shell 45 to 49. No API that only exists on one of them without a fallback. Check `shell-version` in `src/metadata.json` when you rely on something new.
 - Everything created in `enable()` or `_init()` is torn down in `disable()` or `destroy()`: timers (`GLib.source_remove`), signal handlers, the Soup session. A GNOME reviewer rejects leaks.
-- No synchronous I/O or spawning in the Shell process. `src/usage.js` is async end to end; keep it free of Shell imports so `gjs -m test/parse.js` keeps working.
+- No synchronous I/O or spawning in the Shell process. `src/usage.js` is async end to end; keep it and `src/polling.js` free of Shell imports so `make test` keeps working. New behaviour in either gets a test in the matching `test/` file.
 - The usage endpoint rate-limits per account and Claude Code polls it too. Never fetch twice within 30 seconds, always honour `Retry-After`, keep showing the last good values on error.
 - Never write to the credentials file, never log the token, never add a network call to another host.
 - User-visible text is plain English, sentence case, no jargon from the API (`weekly_scoped` is "Weekly, Fable" to the user).
@@ -67,7 +68,7 @@ A new setting touches four places, in one commit: the schema in `src/schemas/`, 
 ## Testing before a PR
 
 ```sh
-make check            # eslint, schema validation, offline tests
+make check            # eslint, shellcheck, schema validation, offline tests
 gjs -m test/fetch.js  # live call with your own Claude Code login
 make install          # then log out and back in (Wayland) or Alt+F2, r (X11)
 journalctl -b -o cat /usr/bin/gnome-shell | grep -i ai-meter

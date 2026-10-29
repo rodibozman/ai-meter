@@ -13,12 +13,9 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {
     fetchUsage, defaultCredentialsPath, formatDuration, formatResetClock, USER_AGENT,
 } from './usage.js';
+import {severity, fetchWait, retryAfterError} from './polling.js';
 
-const MAX_BACKOFF_SECONDS = 900;
 const MENU_TICK_SECONDS = 30;
-// The usage endpoint allows only a handful of calls per few minutes per
-// account, and Claude Code itself polls it: never fetch more often than this.
-const MIN_FETCH_GAP_MS = 30 * 1000;
 
 // St.BoxLayout's `vertical` is deprecated from GNOME 48 in favour of
 // `orientation`, which GNOME 45 to 47 do not have.
@@ -31,16 +28,6 @@ const COLORS = {
     warn: [0.96, 0.76, 0.07],  // GNOME yellow 3
     crit: [0.93, 0.20, 0.23],  // GNOME red 2
 };
-
-function severity(percent, warn, crit) {
-    if (percent === null || percent === undefined)
-        return 'ok';
-    if (percent >= crit)
-        return 'crit';
-    if (percent >= warn)
-        return 'warn';
-    return 'ok';
-}
 
 function roundedRect(cr, x, y, w, h, r) {
     r = Math.min(r, h / 2, w / 2);
@@ -239,7 +226,7 @@ class AiMeterIndicator extends PanelMenu.Button {
         if (this._destroyed || this._refreshing)
             return;
         const now = Date.now();
-        const wait = Math.max(this._state.nextTry - now, this._state.lastAttempt + MIN_FETCH_GAP_MS - now);
+        const wait = fetchWait(this._state, now);
         if (wait > 0) {
             // Too soon (manual refresh spam, or a Retry-After still running).
             this._schedule(Math.ceil(wait / 1000));
@@ -259,15 +246,11 @@ class AiMeterIndicator extends PanelMenu.Button {
             const kind = e.kind ?? 'unknown';
             if (kind !== 'no-credentials' && kind !== 'expired')
                 console.warn(`[ai-meter] refresh failed (${kind}): ${e.message}`);
-            if (kind === 'rate-limited') {
-                // Honour Retry-After; the budget is shared with Claude Code.
-                next = Math.max(e.retryAfter ?? 300, 60);
-                this._backoff = 0;
-            } else {
-                const base = Math.max(this._settings.get_int('refresh-interval'), 60);
-                this._backoff = Math.min(this._backoff ? this._backoff * 2 : base, MAX_BACKOFF_SECONDS);
-                next = this._backoff;
-            }
+            // Honours Retry-After (the budget is shared with Claude Code),
+            // otherwise backs off exponentially.
+            const retry = retryAfterError(e, this._backoff, this._settings.get_int('refresh-interval'));
+            this._backoff = retry.backoff;
+            next = retry.next;
             this._state.nextTry = Date.now() + next * 1000;
         } finally {
             this._refreshing = false;

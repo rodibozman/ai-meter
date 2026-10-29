@@ -1,6 +1,7 @@
 UUID := ai-meter@rodibozman.github.io
 DIST := dist
 ZIP  := $(DIST)/$(UUID).shell-extension.zip
+TESTS := test/parse.js test/credentials.js test/http.js test/polling.js
 
 .PHONY: install uninstall zip check lint test schema clean
 
@@ -21,12 +22,13 @@ check: lint schema test
 
 lint:
 	npx --yes eslint@9 .
+	@if command -v shellcheck >/dev/null 2>&1; then shellcheck -s sh install.sh; else echo "shellcheck not found, install.sh not checked"; fi
 
 schema:
 	glib-compile-schemas --strict src/schemas
 
 test:
-	gjs -m test/parse.js
+	@for t in $(TESTS); do echo "== $$t"; gjs -m $$t || exit 1; done
 
 clean:
 	rm -rf $(DIST) src/schemas/gschemas.compiled

@@ -193,11 +193,12 @@ function scopeName(scope) {
  *
  * @param {Soup.Session} session
  * @param {string} credentialsPath
+ * @param {string} [url] the endpoint, overridden only by the tests
  * @returns {Promise<{usage: object, plan: string}>}
  */
-export async function fetchUsage(session, credentialsPath) {
+export async function fetchUsage(session, credentialsPath, url = USAGE_URL) {
     const creds = await readCredentials(credentialsPath);
-    const msg = Soup.Message.new('GET', USAGE_URL);
+    const msg = Soup.Message.new('GET', url);
     msg.request_headers.append('Authorization', `Bearer ${creds.accessToken}`);
     msg.request_headers.append('anthropic-beta', 'oauth-2025-04-20');
     msg.request_headers.append('Accept', 'application/json');
