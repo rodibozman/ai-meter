@@ -45,14 +45,14 @@ Click the indicator, then **Settings** (or use the Extensions app):
 | Also show the weekly percentage | off | `12% · 40%` instead of `12%` |
 | Position | 0 | Slot in the right-hand cluster of the bar, 0 = leftmost |
 | Amber from / Red from | 70 / 90 | Color thresholds |
-| Refresh every | 120 s | Poll interval, 60 s minimum. The dropdown also refreshes when opened and the data is older than that |
+| Refresh every | 300 s | Poll interval, 60 s minimum. The dropdown also refreshes when opened and the data is older than that |
 | Credentials file | `~/.claude/.credentials.json` | Where Claude Code stores its login |
 
 ## How it works
 
 Claude Code stores an OAuth token in `~/.claude/.credentials.json` when you sign in. AI Meter reads that token and calls the same usage endpoint the `/usage` command of Claude Code calls, `https://api.anthropic.com/api/oauth/usage`. Nothing is written back, and nothing else leaves your machine.
 
-The endpoint allows only a few calls per few minutes per account, and Claude Code polls it too (for its own usage display), so the extension never calls it more than once per 30 s, honours the `Retry-After` the API sends with a 429, and keeps showing the last values meanwhile.
+The endpoint allows only a few calls per few minutes per account, and Claude Code polls it too (for its own usage display), so the extension never calls it more than once per 60 s, waits at least 5 minutes after a 429 (longer when `Retry-After` asks for it, and doubling while the 429s go on), and keeps showing the last values meanwhile.
 
 When the token expires, the bar shows `expired`: open Claude Code (run `claude` in a terminal) and it renews the file; the meter picks it up on the next refresh. If the file is missing, the bar shows `no login`.
 

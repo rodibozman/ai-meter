@@ -3,11 +3,12 @@
 
 export const MAX_BACKOFF_SECONDS = 900;
 // The usage endpoint allows only a handful of calls per few minutes per
-// account, and Claude Code itself polls it: never fetch more often than this.
-export const MIN_FETCH_GAP_MS = 30 * 1000;
-// What a 429 without a usable Retry-After waits, and the least it can ask.
-export const RATE_LIMIT_DEFAULT_SECONDS = 300;
-export const RATE_LIMIT_MIN_SECONDS = 60;
+// account, and Claude Code itself polls it from every open session: never
+// fetch more often than this.
+export const MIN_FETCH_GAP_MS = 60 * 1000;
+// The least a 429 waits, whatever Retry-After says (the API has been seen
+// answering 0, and a 429 means the account's budget is used up right now).
+export const RATE_LIMIT_MIN_SECONDS = 300;
 
 /**
  * The state of the polling loop. It belongs to the extension, not to the
@@ -72,10 +73,12 @@ const CREDENTIAL_KINDS = ['no-credentials', 'bad-credentials', 'expired'];
 
 /**
  * Delay in seconds before retrying after a failed fetch, and the new backoff.
- * A rate limit honours Retry-After (floored at RATE_LIMIT_MIN_SECONDS) and
- * resets the backoff; a credentials problem retries at the refresh interval
- * (at least 60 s) without backoff; anything else doubles the backoff from
- * that interval up to MAX_BACKOFF_SECONDS.
+ * A rate limit waits the longest of Retry-After, the refresh interval,
+ * RATE_LIMIT_MIN_SECONDS and twice the current backoff (capped at
+ * MAX_BACKOFF_SECONDS), so repeated 429s space out and leave the budget to
+ * Claude Code; a credentials problem retries at the refresh interval (at
+ * least 60 s) without backoff; anything else doubles the backoff from that
+ * interval up to MAX_BACKOFF_SECONDS.
  *
  * @param {{kind?: string, retryAfter?: number}} error
  * @param {number} backoff current backoff in seconds, 0 when none
@@ -84,8 +87,10 @@ const CREDENTIAL_KINDS = ['no-credentials', 'bad-credentials', 'expired'];
  */
 export function retryAfterError(error, backoff, interval) {
     if (error?.kind === 'rate-limited') {
-        const asked = Number.isFinite(error.retryAfter) ? error.retryAfter : RATE_LIMIT_DEFAULT_SECONDS;
-        return {next: Math.max(asked, RATE_LIMIT_MIN_SECONDS), backoff: 0};
+        const asked = Number.isFinite(error.retryAfter) ? error.retryAfter : 0;
+        const doubled = Math.min(backoff * 2, MAX_BACKOFF_SECONDS);
+        const next = Math.max(asked, interval, RATE_LIMIT_MIN_SECONDS, doubled);
+        return {next, backoff: next};
     }
     const base = Math.max(interval, 60);
     if (CREDENTIAL_KINDS.includes(error?.kind))
