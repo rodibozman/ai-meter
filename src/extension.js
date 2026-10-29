@@ -14,8 +14,11 @@ import {
     fetchUsage, defaultCredentialsPath, formatDuration, formatResetClock, USER_AGENT,
 } from './usage.js';
 
-const MAX_BACKOFF_SECONDS = 600;
+const MAX_BACKOFF_SECONDS = 900;
 const MENU_TICK_SECONDS = 30;
+// The usage endpoint allows only a handful of calls per few minutes per
+// account, and Claude Code itself polls it: never fetch more often than this.
+const MIN_FETCH_GAP_MS = 30 * 1000;
 
 const COLORS = {
     ok: [0.21, 0.52, 0.89],    // GNOME blue 3
@@ -127,7 +130,7 @@ class AiMeterIndicator extends PanelMenu.Button {
         this._timerId = 0;
         this._menuTickId = 0;
         this._backoff = 0;
-        this._state = {usage: null, plan: '', error: null, fetchedAt: 0};
+        this._state = {usage: null, plan: '', error: null, fetchedAt: 0, lastAttempt: 0, nextTry: 0};
         this._destroyed = false;
         this._refreshing = false;
 
@@ -229,25 +232,44 @@ class AiMeterIndicator extends PanelMenu.Button {
     async _refresh() {
         if (this._destroyed || this._refreshing)
             return;
+        const now = Date.now();
+        const wait = Math.max(this._state.nextTry - now, this._state.lastAttempt + MIN_FETCH_GAP_MS - now);
+        if (wait > 0) {
+            // Too soon (manual refresh spam, or a Retry-After still running).
+            this._schedule(Math.ceil(wait / 1000));
+            return;
+        }
         this._refreshing = true;
+        this._state.lastAttempt = now;
+        this._render();
+        let next;
         try {
             const {usage, plan} = await fetchUsage(this._http, this._credentialsPath());
-            this._state = {usage, plan, error: null, fetchedAt: Date.now()};
+            this._state = {...this._state, usage, plan, error: null, fetchedAt: Date.now(), nextTry: 0};
             this._backoff = 0;
+            next = this._settings.get_int('refresh-interval');
         } catch (e) {
             this._state.error = e;
             const kind = e.kind ?? 'unknown';
             if (kind !== 'no-credentials' && kind !== 'expired')
                 console.warn(`[ai-meter] refresh failed (${kind}): ${e.message}`);
-            const base = Math.max(this._settings.get_int('refresh-interval'), 15);
-            this._backoff = Math.min(this._backoff ? this._backoff * 2 : base, MAX_BACKOFF_SECONDS);
+            if (kind === 'rate-limited') {
+                // Honour Retry-After; the budget is shared with Claude Code.
+                next = Math.max(e.retryAfter ?? 300, 60);
+                this._backoff = 0;
+            } else {
+                const base = Math.max(this._settings.get_int('refresh-interval'), 60);
+                this._backoff = Math.min(this._backoff ? this._backoff * 2 : base, MAX_BACKOFF_SECONDS);
+                next = this._backoff;
+            }
+            this._state.nextTry = Date.now() + next * 1000;
         } finally {
             this._refreshing = false;
         }
         if (this._destroyed)
             return;
         this._render();
-        this._schedule(this._backoff || this._settings.get_int('refresh-interval'));
+        this._schedule(next);
     }
 
     _thresholds() {
@@ -337,8 +359,10 @@ class AiMeterIndicator extends PanelMenu.Button {
             return 'The credentials file has no Claude login. Run `claude` in a terminal and sign in.';
         case 'expired':
             return 'Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up on the next refresh.';
-        case 'rate-limited':
-            return 'The usage endpoint asked us to slow down. Retrying with a longer interval.';
+        case 'rate-limited': {
+            const left = formatDuration(this._state.nextTry - Date.now());
+            return `The usage API allows only a few calls per few minutes per account, shared with Claude Code. Next try in ${left ?? 'a moment'}.`;
+        }
         case 'network':
             return `Network error: ${error.message}`;
         default:
@@ -354,9 +378,9 @@ class AiMeterIndicator extends PanelMenu.Button {
         if (!open)
             return;
         this._render();
-        // Refresh on open when the data is older than half the interval.
+        // Refresh on open only when the data is older than the interval.
         const interval = this._settings.get_int('refresh-interval') * 1000;
-        if (Date.now() - this._state.fetchedAt > interval / 2)
+        if (Date.now() - this._state.fetchedAt > interval)
             this._schedule(0);
         this._menuTickId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, MENU_TICK_SECONDS, () => {
             this._render();

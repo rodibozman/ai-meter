@@ -7,8 +7,8 @@
   </enum>
   <schema id="org.gnome.shell.extensions.ai-meter" path="/org/gnome/shell/extensions/ai-meter/">
     <key name="refresh-interval" type="i">
-      <range min="15" max="3600"/>
-      <default>60</default>
+      <range min="60" max="3600"/>
+      <default>120</default>
       <summary>Refresh interval in seconds</summary>
     </key>
     <key name="warn-threshold" type="i">
