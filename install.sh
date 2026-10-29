@@ -14,10 +14,12 @@ die() { say "error: $*" >&2; exit 1; }
 command -v gnome-shell >/dev/null 2>&1 || die "gnome-shell not found: this extension is for GNOME Shell (Ubuntu's default desktop)."
 command -v glib-compile-schemas >/dev/null 2>&1 || die "glib-compile-schemas not found: install it with 'sudo apt install libglib2.0-dev-bin' (Ubuntu) or your distro's equivalent."
 
-# Where do the sources come from?
+# Where do the sources come from? A local copy only if it is this
+# extension: piped from curl, "$0" is the shell and "here" is the current
+# directory, which may hold another project's src/metadata.json.
 here="$(cd "$(dirname "$0")" 2>/dev/null && pwd)" || here=""
 tmp=""
-if [ -n "$here" ] && [ -f "$here/src/metadata.json" ]; then
+if [ -n "$here" ] && grep -q "\"uuid\": *\"$UUID\"" "$here/src/metadata.json" 2>/dev/null; then
     src="$here/src"
 else
     command -v curl >/dev/null 2>&1 || die "curl not found."
