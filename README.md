@@ -45,7 +45,7 @@ Click the indicator, then **Settings** (or use the Extensions app):
 | Also show the weekly percentage | off | `12% · 40%` instead of `12%` |
 | Position | 0 | Slot in the right-hand cluster of the bar, 0 = leftmost |
 | Amber from / Red from | 70 / 90 | Color thresholds |
-| Refresh every | 300 s | Poll interval, 60 s minimum. The dropdown also refreshes when opened and the data is older than that |
+| Refresh every | 300 s | Poll interval, 150 s minimum. The dropdown also refreshes when opened and the data is older than that |
 | Credentials file | `~/.claude/.credentials.json` | Where Claude Code stores its login |
 
 ## How it works

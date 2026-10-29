@@ -45,7 +45,7 @@ export default class AiMeterPreferences extends ExtensionPreferences {
         // Data
         const data = new Adw.PreferencesGroup({title: 'Data'});
         page.add(data);
-        data.add(this._spin(settings, 'refresh-interval', 'Refresh every (seconds)', 60, 3600, 30,
+        data.add(this._spin(settings, 'refresh-interval', 'Refresh every (seconds)', 150, 3600, 30,
             'The usage API allows only a few calls per few minutes, shared with Claude Code'));
         const path = new Adw.EntryRow({
             title: 'Claude Code credentials file',
