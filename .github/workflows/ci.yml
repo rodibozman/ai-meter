@@ -15,13 +15,15 @@ jobs:
         with:
           node-version: 20
       - name: Install GJS and GLib tools
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gjs gir1.2-soup-3.0 libglib2.0-dev-bin zip
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gjs gir1.2-soup-3.0 libglib2.0-dev-bin zip shellcheck
       - name: Lint
         run: npx --yes eslint@9 .
+      - name: Lint the installer
+        run: shellcheck -s sh install.sh
       - name: Validate settings schema
         run: glib-compile-schemas --strict --dry-run src/schemas
-      - name: Unit tests (gjs)
-        run: gjs -m test/parse.js
+      - name: Tests (gjs, no network)
+        run: make test
       - name: Build zip
         run: make zip
       - uses: actions/upload-artifact@v4
