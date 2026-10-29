@@ -235,11 +235,18 @@ export async function fetchUsage(session, credentialsPath) {
     return {usage: parseUsage(data), plan: creds.plan};
 }
 
-/** "2h 13m", "45m", "5d 19h"; null when `ms` is in the past or unknown. */
-export function formatDuration(ms) {
+/**
+ * "2h 13m", "45m", "5d 19h"; null when `ms` is in the past or unknown.
+ * Rounds up to the next minute ("resets in 1m" until it does); with
+ * `roundUp` false it rounds down instead, and the first minute is null
+ * (an age: "updated just now").
+ */
+export function formatDuration(ms, roundUp = true) {
     if (ms === null || ms === undefined || ms <= 0)
         return null;
-    const minutes = Math.ceil(ms / 60000);
+    const minutes = roundUp ? Math.ceil(ms / 60000) : Math.floor(ms / 60000);
+    if (minutes === 0)
+        return null;
     if (minutes < 60)
         return `${minutes}m`;
     const hours = Math.floor(minutes / 60);

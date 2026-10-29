@@ -344,7 +344,7 @@ class AiMeterIndicator extends PanelMenu.Button {
         this._message.visible = Boolean(error);
 
         if (fetchedAt) {
-            const age = formatDuration(now - fetchedAt);
+            const age = formatDuration(now - fetchedAt, false);
             this._updatedLabel.text = age === null ? 'Updated just now' : `Updated ${age} ago`;
         } else {
             this._updatedLabel.text = this._refreshing ? 'Fetching…' : 'Not fetched yet';
