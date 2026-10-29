@@ -59,20 +59,24 @@ export async function readCredentials(path) {
 }
 
 function planName(subscription, tier) {
-    const parts = [];
-    if (typeof subscription === 'string' && subscription !== '')
-        parts.push(subscription[0].toUpperCase() + subscription.slice(1));
+    const plan = typeof subscription === 'string' && subscription !== ''
+        ? subscription[0].toUpperCase() + subscription.slice(1)
+        : '';
+    let label = '';
     if (typeof tier === 'string') {
         // e.g. "default_claude_max_5x" -> "Max 5x"
         const m = tier.match(/claude_(\w+?)_(\d+x)$/) ?? tier.match(/claude_(\w+)$/);
         if (m) {
             const name = m[1][0].toUpperCase() + m[1].slice(1);
-            const label = m[2] ? `${name} ${m[2]}` : name;
-            if (!parts.includes(label))
-                parts.push(label);
+            label = m[2] ? `${name} ${m[2]}` : name;
         }
     }
-    return parts.join(' · ');
+    // "Max" + "Max 5x" is just "Max 5x"; "Team" + "Max 5x" is "Team · Max 5x".
+    if (label === '')
+        return plan;
+    if (plan === '' || label === plan || label.startsWith(`${plan} `))
+        return label;
+    return `${plan} · ${label}`;
 }
 
 function isoToMs(iso) {
