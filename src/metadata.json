@@ -1,7 +1,7 @@
 {
   "uuid": "ai-meter@rodibozman.github.io",
   "name": "AI Meter",
-  "description": "Shows your Claude Pro/Max usage (5-hour window and weekly limits) in the top bar, with a detail panel on click. Reuses the login of Claude Code on this machine; no API key needed.",
+  "description": "Shows your Claude Pro/Max usage (5-hour window and weekly limits) in the top bar, with a detail panel on click.\n\nIt reuses the login of Claude Code on this machine, so no API key is needed: it reads the access token in ~/.claude/.credentials.json and sends it only to api.anthropic.com, to the usage endpoint behind Claude Code's /usage command. Nothing is written back and nothing is sent anywhere else.\n\nNot affiliated with Anthropic.",
   "version-name": "0.1.2",
   "shell-version": ["45", "46", "47", "48", "49"],
   "url": "https://github.com/rodibozman/ai-meter",
