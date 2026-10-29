@@ -15,7 +15,7 @@ command -v gnome-shell >/dev/null 2>&1 || die "gnome-shell not found: this exten
 command -v glib-compile-schemas >/dev/null 2>&1 || die "glib-compile-schemas not found: install it with 'sudo apt install libglib2.0-dev-bin' (Ubuntu) or your distro's equivalent."
 
 # Where do the sources come from?
-here="$(cd "$(dirname "$0")" 2>/dev/null && pwd || true)"
+here="$(cd "$(dirname "$0")" 2>/dev/null && pwd)" || here=""
 tmp=""
 if [ -n "$here" ] && [ -f "$here/src/metadata.json" ]; then
     src="$here/src"
