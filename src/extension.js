@@ -13,7 +13,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {
     fetchUsage, defaultCredentialsPath, formatDuration, formatResetClock, USER_AGENT,
 } from './usage.js';
-import {severity, fetchWait, retryAfterError} from './polling.js';
+import {severity, fetchWait, retryAfterError, initialDelay, newPollState} from './polling.js';
 
 const MENU_TICK_SECONDS = 30;
 
@@ -115,15 +115,15 @@ class AiMeterMeterItem extends PopupMenu.PopupBaseMenuItem {
 
 const Indicator = GObject.registerClass(
 class AiMeterIndicator extends PanelMenu.Button {
-    _init(extension, settings) {
+    _init(extension, settings, state) {
         super._init(0.5, 'AI Meter', false);
         this._extension = extension;
         this._settings = settings;
         this._http = new Soup.Session({timeout: 15, user_agent: USER_AGENT});
         this._timerId = 0;
         this._menuTickId = 0;
-        this._backoff = 0;
-        this._state = {usage: null, plan: '', error: null, fetchedAt: 0, lastAttempt: 0, nextTry: 0};
+        // Shared with the extension and any indicator created after this one.
+        this._state = state;
         this._destroyed = false;
         this._refreshing = false;
 
@@ -151,7 +151,7 @@ class AiMeterIndicator extends PanelMenu.Button {
         this.menu.connect('open-state-changed', (_m, open) => this._onMenuToggled(open));
 
         this._render();
-        this._schedule(0);
+        this._schedule(initialDelay(this._state, settings.get_int('refresh-interval'), Date.now()));
     }
 
     _buildMenu() {
@@ -238,8 +238,7 @@ class AiMeterIndicator extends PanelMenu.Button {
         let next;
         try {
             const {usage, plan} = await fetchUsage(this._http, this._credentialsPath());
-            this._state = {...this._state, usage, plan, error: null, fetchedAt: Date.now(), nextTry: 0};
-            this._backoff = 0;
+            Object.assign(this._state, {usage, plan, error: null, fetchedAt: Date.now(), nextTry: 0, backoff: 0});
             next = this._settings.get_int('refresh-interval');
         } catch (e) {
             // destroy() aborted the request (disable, lock screen, position
@@ -252,8 +251,8 @@ class AiMeterIndicator extends PanelMenu.Button {
                 console.warn(`[ai-meter] refresh failed (${kind}): ${e.message}`);
             // Honours Retry-After (the budget is shared with Claude Code),
             // otherwise backs off exponentially.
-            const retry = retryAfterError(e, this._backoff, this._settings.get_int('refresh-interval'));
-            this._backoff = retry.backoff;
+            const retry = retryAfterError(e, this._state.backoff, this._settings.get_int('refresh-interval'));
+            this._state.backoff = retry.backoff;
             next = retry.next;
             this._state.nextTry = Date.now() + next * 1000;
         } finally {
@@ -400,6 +399,10 @@ class AiMeterIndicator extends PanelMenu.Button {
 export default class AiMeterExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
+        // Plain data (last values, timestamps) kept across disable()/enable()
+        // on purpose: the lock screen disables the extension, and a fetch on
+        // every unlock would eat the rate limit shared with Claude Code.
+        this._pollState ??= newPollState();
         this._addIndicator();
         this._positionId = this._settings.connect('changed::panel-position', () => {
             this._removeIndicator();
@@ -417,7 +420,7 @@ export default class AiMeterExtension extends Extension {
     }
 
     _addIndicator() {
-        this._indicator = new Indicator(this, this._settings);
+        this._indicator = new Indicator(this, this._settings, this._pollState);
         Main.panel.addToStatusArea(this.uuid, this._indicator, this._settings.get_int('panel-position'), 'right');
     }
 
