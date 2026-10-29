@@ -1,7 +1,7 @@
 // Offline tests of src/polling.js, the decisions behind the refresh loop:
 // `gjs -m test/polling.js` from the repo root.
 import {
-    severity, fetchWait, retryAfterError, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
+    severity, fetchWait, retryAfterError, newPollState, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
 } from '../src/polling.js';
 import {assert, assertEqual, main} from './harness.js';
 
@@ -13,8 +13,19 @@ main(() => {
     assert(severity(90, 70, 90) === 'crit' && severity(100, 70, 90) === 'crit', 'crit threshold inclusive');
     assert(severity(50, 90, 70) === 'ok' && severity(80, 90, 70) === 'crit', 'crit wins when thresholds are inverted');
 
-    // Minimum gap between two calls, and a Retry-After or backoff still running.
+    // A fresh indicator fetches at once without data, else when the interval
+    // since the last fetch is over (the state outlives the indicator).
     const now = 1_000_000_000;
+    assertEqual(newPollState(), {usage: null, plan: '', error: null, fetchedAt: 0, lastAttempt: 0, nextTry: 0, backoff: 0}, 'initial state');
+    assert(initialDelay(newPollState(), 120, now) === 0, 'no data: fetch now');
+    assert(initialDelay({...newPollState(), fetchedAt: now - 1000}, 120, now) === 0, 'an attempt without data: fetch now');
+    const fetched = {...newPollState(), usage: {}, fetchedAt: now - 40_000};
+    assert(initialDelay(fetched, 120, now) === 80, 'data 40 s old with a 120 s interval waits 80 s');
+    assert(initialDelay({...fetched, fetchedAt: now - 500}, 120, now) === 120, 'rounds up to whole seconds');
+    assert(initialDelay({...fetched, fetchedAt: now - 120_000}, 120, now) === 0, 'data as old as the interval: fetch now');
+    assert(initialDelay({...fetched, fetchedAt: now - 3_600_000}, 120, now) === 0, 'stale data: fetch now');
+
+    // Minimum gap between two calls, and a Retry-After or backoff still running.
     assert(fetchWait({nextTry: 0, lastAttempt: 0}, now) === 0, 'first fetch goes now');
     assert(fetchWait({nextTry: 0, lastAttempt: now - MIN_FETCH_GAP_MS}, now) === 0, 'exactly the gap is allowed');
     assert(fetchWait({nextTry: 0, lastAttempt: now - 10_000}, now) === MIN_FETCH_GAP_MS - 10_000, 'manual refresh 10 s after a fetch waits the rest of the gap');

@@ -9,6 +9,28 @@ export const MIN_FETCH_GAP_MS = 30 * 1000;
 export const RATE_LIMIT_DEFAULT_SECONDS = 300;
 export const RATE_LIMIT_MIN_SECONDS = 60;
 
+/**
+ * The state of the polling loop. It belongs to the extension, not to the
+ * indicator, so that recreating the indicator (position change, lock
+ * screen) keeps the last values, the minimum gap, a Retry-After and the
+ * backoff: a burst of fetches would hit the rate limit shared with Claude
+ * Code. `usage`/`plan`/`error`/`fetchedAt` describe the last fetch,
+ * `lastAttempt`/`nextTry` are ms timestamps (0 = never), `backoff` seconds.
+ */
+export function newPollState() {
+    return {usage: null, plan: '', error: null, fetchedAt: 0, lastAttempt: 0, nextTry: 0, backoff: 0};
+}
+
+/**
+ * Seconds a fresh indicator waits before its first fetch: 0 without data,
+ * otherwise what is left of the refresh interval since the last fetch.
+ */
+export function initialDelay(state, interval, now) {
+    if (!state.usage)
+        return 0;
+    return Math.max(0, Math.ceil((state.fetchedAt + interval * 1000 - now) / 1000));
+}
+
 /** 'ok', 'warn' or 'crit' for a percentage and the two thresholds. */
 export function severity(percent, warn, crit) {
     if (percent === null || percent === undefined)
