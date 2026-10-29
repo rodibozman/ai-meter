@@ -75,11 +75,3 @@ Sources live in `src/`. `usage.js` (fetch and parse) has no Shell dependency, so
 ## License
 
 MIT, see [LICENSE](LICENSE).
-
-### Continuous integration
-
-`ci.yml` is the GitHub Actions workflow (lint, schema check, gjs tests, zip artifact, and a GitHub release on `v*` tags). The bot that opened the initial PR cannot write under `.github/workflows/`, so move it yourself once:
-
-```sh
-mkdir -p .github/workflows && git mv ci.yml .github/workflows/ci.yml && git commit -m "Enable CI"
-```
