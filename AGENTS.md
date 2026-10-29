@@ -11,7 +11,7 @@ Layout:
 - `src/usage.js`: fetch and parse. No GNOME Shell import, so it runs under plain `gjs`.
 - `src/extension.js`: the indicator, the dropdown, the polling loop.
 - `src/prefs.js` and `src/schemas/`: the settings window and its GSettings schema.
-- `install.sh`, `Makefile`, `ci.yml`: install, checks, release.
+- `install.sh`, `Makefile`, `.github/workflows/ci.yml`: install, checks, release.
 - `test/`: `parse.js` offline, `fetch.js` against the real endpoint.
 
 ## Commit messages
@@ -84,4 +84,3 @@ Semantic versioning. Bump `version-name` in `src/metadata.json` and `version` in
 - Run the checks above before opening a PR, and say in the PR which ones you ran.
 - Do not install the extension into a running desktop session unless the user asked for it.
 - Keep PRs small and do not change defaults (thresholds, interval, position) without stating why in the PR.
-- `ci.yml` lives at the repo root only because the bot that started this repo could not write under `.github/workflows/`; the real file is `.github/workflows/ci.yml`. Edit both, or ask the maintainer to copy.
