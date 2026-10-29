@@ -13,7 +13,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {
     fetchUsage, defaultCredentialsPath, formatDuration, formatResetClock, USER_AGENT,
 } from './usage.js';
-import {severity, fetchWait, retryAfterError, initialDelay, newPollState} from './polling.js';
+import {severity, fetchWait, retryAfterError, initialDelay, newPollState, pollTiming} from './polling.js';
 
 const MENU_TICK_SECONDS = 30;
 
@@ -397,12 +397,15 @@ class AiMeterIndicator extends PanelMenu.Button {
 });
 
 export default class AiMeterExtension extends Extension {
+    constructor(metadata) {
+        super(metadata);
+        // Three numbers kept across disable()/enable(), see pollTiming().
+        this._timing = pollTiming(newPollState());
+    }
+
     enable() {
         this._settings = this.getSettings();
-        // Plain data (last values, timestamps) kept across disable()/enable()
-        // on purpose: the lock screen disables the extension, and a fetch on
-        // every unlock would eat the rate limit shared with Claude Code.
-        this._pollState ??= newPollState();
+        this._pollState = newPollState(this._timing);
         this._addIndicator();
         this._positionId = this._settings.connect('changed::panel-position', () => {
             this._removeIndicator();
@@ -416,6 +419,8 @@ export default class AiMeterExtension extends Extension {
             this._positionId = 0;
         }
         this._removeIndicator();
+        this._timing = pollTiming(this._pollState);
+        this._pollState = null;
         this._settings = null;
     }
 
