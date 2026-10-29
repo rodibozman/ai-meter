@@ -29,11 +29,16 @@ export function fetchWait(state, now) {
     return Math.max(0, state.nextTry - now, state.lastAttempt + MIN_FETCH_GAP_MS - now);
 }
 
+// Failures that only the user can fix, by signing in to Claude Code: polled
+// at the plain interval so the new login is seen on the next refresh.
+const CREDENTIAL_KINDS = ['no-credentials', 'bad-credentials', 'expired'];
+
 /**
  * Delay in seconds before retrying after a failed fetch, and the new backoff.
  * A rate limit honours Retry-After (floored at RATE_LIMIT_MIN_SECONDS) and
- * resets the backoff; anything else doubles the backoff from the refresh
- * interval (at least 60 s) up to MAX_BACKOFF_SECONDS.
+ * resets the backoff; a credentials problem retries at the refresh interval
+ * (at least 60 s) without backoff; anything else doubles the backoff from
+ * that interval up to MAX_BACKOFF_SECONDS.
  *
  * @param {{kind?: string, retryAfter?: number}} error
  * @param {number} backoff current backoff in seconds, 0 when none
@@ -46,6 +51,8 @@ export function retryAfterError(error, backoff, interval) {
         return {next: Math.max(asked, RATE_LIMIT_MIN_SECONDS), backoff: 0};
     }
     const base = Math.max(interval, 60);
+    if (CREDENTIAL_KINDS.includes(error?.kind))
+        return {next: base, backoff: 0};
     const next = Math.min(backoff ? backoff * 2 : base, MAX_BACKOFF_SECONDS);
     return {next, backoff: next};
 }

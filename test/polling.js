@@ -45,4 +45,13 @@ main(() => {
     assertEqual(retryAfterError(null, 240, 120), {next: 480, backoff: 480}, 'null error backs off');
     assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 90}, 480, 120), {next: 90, backoff: 0}, 'a rate limit after backoffs restarts the series');
     assertEqual(retryAfterError({kind: 'network'}, 0, 120), {next: 120, backoff: 120}, 'next failure restarts from the interval');
+
+    // Credentials problems: the user fixes them by signing in, so poll at the
+    // interval and see the new login on the next refresh.
+    for (const kind of ['no-credentials', 'bad-credentials', 'expired']) {
+        assertEqual(retryAfterError({kind}, 0, 120), {next: 120, backoff: 0}, `${kind} retries at the interval`);
+        assertEqual(retryAfterError({kind}, 480, 120), {next: 120, backoff: 0}, `${kind} after backoffs resets them`);
+        assertEqual(retryAfterError({kind}, 0, 30), {next: 60, backoff: 0}, `${kind} waits at least 60 s`);
+    }
+    assertEqual(retryAfterError({kind: 'network'}, 0, 120), {next: 120, backoff: 120}, 'a network error after a credentials one backs off again');
 });
