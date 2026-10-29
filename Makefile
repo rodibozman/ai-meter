@@ -13,9 +13,10 @@ uninstall:
 	rm -rf "$${XDG_DATA_HOME:-$$HOME/.local/share}/gnome-shell/extensions/$(UUID)"
 
 # Zip in the layout extensions.gnome.org and `gnome-extensions install` expect.
+# No gschemas.compiled: both compile the schema at install time.
 zip: schema
 	rm -rf $(DIST) && mkdir -p $(DIST)
-	cd src && zip -qr ../$(ZIP) . -x '*.orig' '*~'
+	cd src && zip -qr ../$(ZIP) . -x '*.orig' '*~' 'schemas/gschemas.compiled'
 	@echo "wrote $(ZIP)"
 
 check: lint schema test
