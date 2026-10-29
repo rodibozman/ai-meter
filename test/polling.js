@@ -2,6 +2,7 @@
 // `gjs -m test/polling.js` from the repo root.
 import {
     severity, fetchWait, retryAfterError, newPollState, pollTiming, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
+    RATE_LIMIT_MIN_SECONDS,
 } from '../src/polling.js';
 import {assert, assertEqual, main} from './harness.js';
 
@@ -36,6 +37,7 @@ main(() => {
     assertEqual(pollTiming(newPollState()), {lastAttempt: 0, nextTry: 0, backoff: 0}, 'fresh timing is zero');
 
     // Minimum gap between two calls, and a Retry-After or backoff still running.
+    assert(MIN_FETCH_GAP_MS === 60_000, 'two calls are at least a minute apart');
     assert(fetchWait({nextTry: 0, lastAttempt: 0}, now) === 0, 'first fetch goes now');
     assert(fetchWait({nextTry: 0, lastAttempt: now - MIN_FETCH_GAP_MS}, now) === 0, 'exactly the gap is allowed');
     assert(fetchWait({nextTry: 0, lastAttempt: now - 10_000}, now) === MIN_FETCH_GAP_MS - 10_000, 'manual refresh 10 s after a fetch waits the rest of the gap');
@@ -43,11 +45,19 @@ main(() => {
     assert(fetchWait({nextTry: now + 120_000, lastAttempt: now - 60_000}, now) === 120_000, 'nextTry in the future is honoured');
     assert(fetchWait({nextTry: now - 1, lastAttempt: now - MIN_FETCH_GAP_MS - 1}, now) === 0, 'past nextTry does not wait');
 
-    // Rate limit: Retry-After, floored at 60 s, resets the backoff.
-    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 77}, 480, 120), {next: 77, backoff: 0}, 'Retry-After used and backoff reset');
-    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 10}, 0, 120), {next: 60, backoff: 0}, 'Retry-After floored at 60 s');
-    assertEqual(retryAfterError({kind: 'rate-limited'}, 0, 120), {next: 300, backoff: 0}, 'no Retry-After waits 300 s');
-    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: NaN}, 0, 120), {next: 300, backoff: 0}, 'NaN Retry-After waits 300 s');
+    // Rate limit: the longest of Retry-After, the interval, 300 s and twice
+    // the backoff, and the wait becomes the new backoff.
+    assert(RATE_LIMIT_MIN_SECONDS === 300, 'a 429 waits at least 5 minutes');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 471}, 0, 120), {next: 471, backoff: 471}, 'a long Retry-After is honoured');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 10}, 0, 120), {next: 300, backoff: 300}, 'a short Retry-After waits the 300 s floor');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 0}, 0, 120), {next: 300, backoff: 300}, 'Retry-After 0 waits the floor');
+    assertEqual(retryAfterError({kind: 'rate-limited'}, 0, 120), {next: 300, backoff: 300}, 'no Retry-After waits the floor');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: NaN}, 0, 120), {next: 300, backoff: 300}, 'NaN Retry-After waits the floor');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 10}, 0, 600), {next: 600, backoff: 600}, 'never sooner than the refresh interval');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 10}, 300, 120), {next: 600, backoff: 600}, 'a second 429 doubles the wait');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 10}, 600, 120), {next: 900, backoff: 900}, 'a third 429 reaches the cap');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 1200}, 900, 120), {next: 1200, backoff: 1200}, 'Retry-After above the cap still wins');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 10}, 1200, 120), {next: 900, backoff: 900}, 'the doubling itself is capped at 900 s');
 
     // Anything else: exponential backoff from the interval up to the cap.
     let b = 0;
@@ -64,7 +74,7 @@ main(() => {
     assertEqual(retryAfterError({kind: 'parse'}, 0, 3600), {next: 900, backoff: 900}, 'interval above the cap starts at the cap');
     assertEqual(retryAfterError({}, 0, 120), {next: 120, backoff: 120}, 'error without a kind backs off');
     assertEqual(retryAfterError(null, 240, 120), {next: 480, backoff: 480}, 'null error backs off');
-    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 90}, 480, 120), {next: 90, backoff: 0}, 'a rate limit after backoffs restarts the series');
+    assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 90}, 480, 120), {next: 900, backoff: 900}, 'a rate limit after backoffs keeps doubling');
     assertEqual(retryAfterError({kind: 'network'}, 0, 120), {next: 120, backoff: 120}, 'next failure restarts from the interval');
 
     // Credentials problems: the user fixes them by signing in, so poll at the
