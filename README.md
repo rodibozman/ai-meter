@@ -70,7 +70,7 @@ make zip     # dist/ai-meter@rodibozman.github.io.shell-extension.zip
 make uninstall
 ```
 
-Sources live in `src/`. `usage.js` (fetch and parse) has no Shell dependency, so `gjs -m test/parse.js` runs it offline.
+Sources live in `src/`. `usage.js` (fetch and parse) and `polling.js` (when to fetch, backoff) have no Shell dependency, so `make test` runs them offline under plain `gjs`: `test/parse.js` (parsing and formatting), `test/credentials.js` (the credentials file), `test/http.js` (every HTTP status, against a local server) and `test/polling.js` (refresh timing). `make lint` also runs shellcheck on `install.sh` when it is installed.
 
 ## License
 

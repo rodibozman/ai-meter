@@ -43,7 +43,11 @@ glib-compile-schemas "$DEST/schemas"
 say "Installed to $DEST"
 
 if command -v gnome-extensions >/dev/null 2>&1; then
-    gnome-extensions enable "$UUID" 2>/dev/null && say "Enabled $UUID" || say "Run 'gnome-extensions enable $UUID' after your next login."
+    if gnome-extensions enable "$UUID" 2>/dev/null; then
+        say "Enabled $UUID"
+    else
+        say "Run 'gnome-extensions enable $UUID' after your next login."
+    fi
 fi
 
 if [ "${XDG_SESSION_TYPE:-}" = "x11" ]; then
