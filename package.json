@@ -9,7 +9,7 @@
     "test": "make test"
   },
   "devDependencies": {
-    "eslint": "^9.0.0"
+    "eslint": "^10.13.0"
   },
   "license": "MIT"
 }
