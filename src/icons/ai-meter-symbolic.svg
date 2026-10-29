@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <!-- a simple gauge: a 3/4 arc with a needle -->
-  <path d="M 3.05 12.95 A 7 7 0 1 1 12.95 12.95" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/>
-  <path d="M 8 8 L 11.5 4.5" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="8" cy="8" r="1.5" fill="#000"/>
-  <style>path,circle{stroke:currentColor;fill:currentColor}path{fill:none}</style>
+  <!-- a simple gauge: a 3/4 arc with a needle, fills only (the shell recolors fill, not stroke) -->
+  <path d="M 2.697 13.303 A 7.5 7.5 0 1 1 13.303 13.303 A 1 1 0 0 1 11.889 11.889 A 5.5 5.5 0 1 0 4.111 11.889 A 1 1 0 0 1 2.697 13.303 Z"/>
+  <path d="M 8.707 8.707 L 12.207 5.207 A 1 1 0 0 0 10.793 3.793 L 7.293 7.293 Z"/>
+  <circle cx="8" cy="8" r="1.75"/>
 </svg>
