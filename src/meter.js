@@ -6,6 +6,7 @@ import Clutter from 'gi://Clutter';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {formatDuration, formatResetClock} from './usage.js';
+import {isExhausted} from './polling.js';
 
 // St.BoxLayout's `vertical` is deprecated from GNOME 48 in favour of
 // `orientation`, which GNOME 45 to 47 do not have.
@@ -18,6 +19,14 @@ const COLORS = {
     warn: [0.96, 0.76, 0.07],  // GNOME yellow 3
     crit: [0.93, 0.20, 0.23],  // GNOME red 2
 };
+
+/** Colours `label` for a severity: the theme's colour when 'ok'. */
+export function setSeverityClass(label, sev) {
+    label.remove_style_class_name('ai-meter-warn');
+    label.remove_style_class_name('ai-meter-crit');
+    if (sev !== 'ok')
+        label.add_style_class_name(`ai-meter-${sev}`);
+}
 
 function roundedRect(cr, x, y, w, h, r) {
     r = Math.min(r, h / 2, w / 2);
@@ -40,7 +49,7 @@ class AiMeterBar extends St.DrawingArea {
     }
 
     setValue(percent, sev) {
-        this._percent = Math.max(0, Math.min(100, percent ?? 0));
+        this._percent = Math.max(0, Math.min(100, percent));
         this._severity = sev;
         this.queue_repaint();
     }
@@ -57,8 +66,8 @@ class AiMeterBar extends St.DrawingArea {
 
         const fill = Math.round(w * this._percent / 100);
         if (fill > 0) {
-            const [cr_, cg, cb] = COLORS[this._severity] ?? COLORS.ok;
-            cr.setSourceRGBA(cr_, cg, cb, 1);
+            const [red, green, blue] = COLORS[this._severity];
+            cr.setSourceRGBA(red, green, blue, 1);
             roundedRect(cr, 0, 0, Math.max(fill, h), h, r);
             cr.fill();
         }
@@ -88,17 +97,14 @@ class AiMeterMeterItem extends PopupMenu.PopupBaseMenuItem {
     update(limit, sev, now) {
         this._name.text = limit.name;
         this._pct.text = `${limit.percent}%`;
-        this._pct.remove_style_class_name('ai-meter-warn');
-        this._pct.remove_style_class_name('ai-meter-crit');
-        if (sev !== 'ok')
-            this._pct.add_style_class_name(`ai-meter-${sev}`);
+        setSeverityClass(this._pct, sev);
         this._bar.setValue(limit.percent, sev);
         const left = formatDuration(limit.resetsAt === null ? null : limit.resetsAt - now);
         const clock = formatResetClock(limit.resetsAt, now);
         if (left === null)
             this._reset.text = limit.locked ? 'Limit reached' : '';
         else
-            this._reset.text = `${limit.locked || limit.percent >= 100 ? 'Limit reached, resets' : 'Resets'} in ${left} (${clock})`;
+            this._reset.text = `${isExhausted(limit) ? 'Limit reached, resets' : 'Resets'} in ${left} (${clock})`;
         this._reset.visible = this._reset.text !== '';
     }
 });

@@ -13,14 +13,19 @@ import {
     fetchUsage, CredentialsWatcher, defaultCredentialsPath, formatDuration, USER_AGENT,
 } from './usage.js';
 import {
-    severity, fetchWait, retryAfterError, isCredentialsError, initialDelay,
+    severity, isExhausted, fetchWait, retryAfterError, isCredentialsError, initialDelay,
 } from './polling.js';
-import {Bar, MeterItem} from './meter.js';
+import {Bar, MeterItem, setSeverityClass} from './meter.js';
 
 const MENU_TICK_SECONDS = 30;
 // Delay between a write of the credentials file and the fetch it triggers,
 // so the several events of one write give a single fetch.
 const CREDENTIALS_SETTLE_SECONDS = 1;
+
+/** A dropdown row that only displays something. */
+function staticItem() {
+    return new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+}
 
 export const Indicator = GObject.registerClass(
 class AiMeterIndicator extends PanelMenu.Button {
@@ -41,7 +46,6 @@ class AiMeterIndicator extends PanelMenu.Button {
         // Set when the credentials file changes during a fetch.
         this._credentialsChanged = false;
 
-        // Top bar content.
         const box = new St.BoxLayout({style_class: 'ai-meter-panel-box', y_align: Clutter.ActorAlign.CENTER});
         this._icon = new St.Icon({
             gicon: Gio.icon_new_for_string(`${extension.path}/icons/ai-meter-symbolic.svg`),
@@ -54,7 +58,6 @@ class AiMeterIndicator extends PanelMenu.Button {
         box.add_child(this._label);
         this.add_child(box);
 
-        // Dropdown.
         this._buildMenu();
 
         this._settingsIds = [
@@ -73,7 +76,7 @@ class AiMeterIndicator extends PanelMenu.Button {
     }
 
     _buildMenu() {
-        const header = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        const header = staticItem();
         const hbox = new St.BoxLayout({x_expand: true});
         hbox.add_child(new St.Label({text: 'Claude usage', style_class: 'ai-meter-menu-header', x_expand: true}));
         this._planLabel = new St.Label({style_class: 'ai-meter-menu-plan', y_align: Clutter.ActorAlign.CENTER});
@@ -84,13 +87,13 @@ class AiMeterIndicator extends PanelMenu.Button {
         this._metersSection = new PopupMenu.PopupMenuSection();
         this.menu.addMenuItem(this._metersSection);
 
-        this._message = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        this._message = staticItem();
         this._messageLabel = new St.Label({style_class: 'ai-meter-menu-message', x_expand: true});
         this._messageLabel.clutter_text.line_wrap = true;
         this._message.add_child(this._messageLabel);
         this.menu.addMenuItem(this._message);
 
-        this._extraItem = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        this._extraItem = staticItem();
         const ebox = new St.BoxLayout({x_expand: true});
         ebox.add_child(new St.Label({text: 'Extra usage', style_class: 'ai-meter-meter-name', x_expand: true}));
         this._extraLabel = new St.Label({style_class: 'ai-meter-meter-pct'});
@@ -100,7 +103,7 @@ class AiMeterIndicator extends PanelMenu.Button {
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        const footer = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        const footer = staticItem();
         const fbox = new St.BoxLayout({x_expand: true, style_class: 'ai-meter-footer'});
         this._updatedLabel = new St.Label({style_class: 'ai-meter-footer-text', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
         const refresh = new St.Button({label: 'Refresh', style_class: 'button', can_focus: true});
@@ -213,25 +216,19 @@ class AiMeterIndicator extends PanelMenu.Button {
         this._schedule(next);
     }
 
-    _thresholds() {
-        return [this._settings.get_int('warn-threshold'), this._settings.get_int('crit-threshold')];
-    }
-
     _render() {
         const now = Date.now();
         const {usage, plan, error, fetchedAt} = this._state;
-        const [warn, crit] = this._thresholds();
+        const warn = this._settings.get_int('warn-threshold');
+        const crit = this._settings.get_int('crit-threshold');
         const display = this._settings.get_string('panel-display');
 
         this._icon.visible = this._settings.get_boolean('show-icon');
-        this._label.remove_style_class_name('ai-meter-warn');
-        this._label.remove_style_class_name('ai-meter-crit');
 
-        // Top bar.
         if (usage?.session) {
             const s = usage.session;
             const sev = severity(s.percent, warn, crit);
-            const exhausted = s.locked || s.percent >= 100;
+            const exhausted = isExhausted(s);
             let text;
             if (exhausted) {
                 const left = formatDuration(s.resetsAt === null ? null : s.resetsAt - now);
@@ -245,9 +242,9 @@ class AiMeterIndicator extends PanelMenu.Button {
             this._label.visible = display !== 'bar' || exhausted;
             this._panelBar.visible = display !== 'percent';
             this._panelBar.setValue(s.percent, sev);
-            if (sev !== 'ok')
-                this._label.add_style_class_name(`ai-meter-${sev}`);
+            setSeverityClass(this._label, sev);
         } else {
+            setSeverityClass(this._label, 'ok');
             this._label.visible = true;
             this._panelBar.visible = false;
             if (!error)
@@ -260,8 +257,7 @@ class AiMeterIndicator extends PanelMenu.Button {
                 this._label.text = '–';
         }
 
-        // Dropdown.
-        this._planLabel.text = plan ?? '';
+        this._planLabel.text = plan;
         this._metersSection.removeAll();
         if (usage) {
             const limits = [usage.session, usage.weekly, ...usage.scoped].filter(Boolean);
@@ -316,15 +312,14 @@ class AiMeterIndicator extends PanelMenu.Button {
         }
         if (!open)
             return;
-        this._render();
-        // Refresh on open only when the data is older than the interval.
-        const interval = this._settings.get_int('refresh-interval') * 1000;
-        if (Date.now() - this._state.fetchedAt > interval)
-            this._schedule(0);
         this._menuTickId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, MENU_TICK_SECONDS, () => {
             this._render();
             return GLib.SOURCE_CONTINUE;
         });
+        this._render();
+        const interval = this._settings.get_int('refresh-interval') * 1000;
+        if (Date.now() - this._state.fetchedAt > interval)
+            this._schedule(0);
     }
 
     destroy() {
