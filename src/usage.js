@@ -33,12 +33,13 @@ export class UsageError extends Error {
  * Reads Claude Code's credentials file.
  *
  * @param {string} path
+ * @param {Gio.Cancellable} [cancellable]
  * @returns {Promise<{accessToken: string, expiresAt: number, plan: string}>}
  */
-export async function readCredentials(path) {
+export async function readCredentials(path, cancellable = null) {
     let bytes;
     try {
-        [bytes] = await Gio.File.new_for_path(path).load_contents_async(null);
+        [bytes] = await Gio.File.new_for_path(path).load_contents_async(cancellable);
     } catch (e) {
         throw new UsageError('no-credentials', `cannot read ${path}: ${e.message}`);
     }
@@ -60,21 +61,28 @@ export async function readCredentials(path) {
 
 /**
  * Calls `onChange` each time the credentials file is written, created or
- * replaced (Claude Code renewing or changing its login). Every way of
- * writing it (in place, or a temporary file renamed over it) ends with
- * CHANGES_DONE_HINT; a deletion is not reported.
- *
- * @param {string} path
- * @param {() => void} onChange
- * @returns {Gio.FileMonitor} cancel() it to stop watching
+ * replaced (Claude Code renewing or changing its login), until destroy().
+ * Every way of writing it (in place, or a temporary file renamed over it)
+ * ends with CHANGES_DONE_HINT; a deletion is not reported.
  */
-export function watchCredentials(path, onChange) {
-    const monitor = Gio.File.new_for_path(path).monitor_file(Gio.FileMonitorFlags.NONE, null);
-    monitor.connect('changed', (_monitor, _file, _other, event) => {
-        if (event === Gio.FileMonitorEvent.CHANGES_DONE_HINT)
-            onChange();
-    });
-    return monitor;
+export class CredentialsWatcher {
+    /**
+     * @param {string} path
+     * @param {() => void} onChange
+     */
+    constructor(path, onChange) {
+        this._monitor = Gio.File.new_for_path(path).monitor_file(Gio.FileMonitorFlags.NONE, null);
+        this._changedId = this._monitor.connect('changed', (_monitor, _file, _other, event) => {
+            if (event === Gio.FileMonitorEvent.CHANGES_DONE_HINT)
+                onChange();
+        });
+    }
+
+    destroy() {
+        this._monitor.disconnect(this._changedId);
+        this._monitor.cancel();
+        this._monitor = null;
+    }
 }
 
 function planName(subscription, tier) {
@@ -212,11 +220,12 @@ function scopeName(scope) {
  *
  * @param {Soup.Session} session
  * @param {string} credentialsPath
+ * @param {Gio.Cancellable} [cancellable] cancels both the file read and the call
  * @param {string} [url] the endpoint, overridden only by the tests
  * @returns {Promise<{usage: object, plan: string}>}
  */
-export async function fetchUsage(session, credentialsPath, url = USAGE_URL) {
-    const creds = await readCredentials(credentialsPath);
+export async function fetchUsage(session, credentialsPath, cancellable = null, url = USAGE_URL) {
+    const creds = await readCredentials(credentialsPath, cancellable);
     const msg = Soup.Message.new('GET', url);
     msg.request_headers.append('Authorization', `Bearer ${creds.accessToken}`);
     msg.request_headers.append('anthropic-beta', 'oauth-2025-04-20');
@@ -224,7 +233,7 @@ export async function fetchUsage(session, credentialsPath, url = USAGE_URL) {
 
     let bytes;
     try {
-        bytes = await session.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, null);
+        bytes = await session.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, cancellable);
     } catch (e) {
         throw new UsageError('network', e.message);
     }

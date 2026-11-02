@@ -47,6 +47,11 @@ export function initialDelay(state, interval, now) {
     return Math.max(0, Math.ceil((state.fetchedAt + interval * 1000 - now) / 1000));
 }
 
+/** Whether a limit is used up: locked by the API, or at 100 %. */
+export function isExhausted(limit) {
+    return limit.locked || limit.percent >= 100;
+}
+
 /** 'ok', 'warn' or 'crit' for a percentage and the two thresholds. */
 export function severity(percent, warn, crit) {
     if (percent === null || percent === undefined)

@@ -16,7 +16,6 @@ export default class AiMeterPreferences extends ExtensionPreferences {
         const page = new Adw.PreferencesPage({title: 'AI Meter', icon_name: 'preferences-system-symbolic'});
         window.add(page);
 
-        // Top bar
         const panel = new Adw.PreferencesGroup({title: 'Top bar'});
         page.add(panel);
 
@@ -36,13 +35,11 @@ export default class AiMeterPreferences extends ExtensionPreferences {
         panel.add(this._spin(settings, 'panel-position', 'Position', 0, 20, 1,
             '0 is the leftmost slot of the right-hand cluster, next to app indicators'));
 
-        // Thresholds
         const colors = new Adw.PreferencesGroup({title: 'Colors', description: 'Percentages from which the indicator changes color'});
         page.add(colors);
         colors.add(this._spin(settings, 'warn-threshold', 'Amber from', 1, 100, 5));
         colors.add(this._spin(settings, 'crit-threshold', 'Red from', 1, 100, 5));
 
-        // Data
         const data = new Adw.PreferencesGroup({title: 'Data'});
         page.add(data);
         data.add(this._spin(settings, 'refresh-interval', 'Refresh every (seconds)', 150, 3600, 30,
