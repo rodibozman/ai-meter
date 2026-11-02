@@ -285,11 +285,15 @@ export function formatDuration(ms, roundUp = true) {
     return `${days}d ${hours % 24}h`;
 }
 
-/** Local clock time of a reset: "13:00" today, "Wed 06:00" otherwise. */
+/**
+ * Local clock time of a reset: "13:00" today, "Wed 06:00" otherwise.
+ * Rounded to the nearest minute: the API's `resets_at` lands a fraction of
+ * a second either side of the hour, and 12:59:59.9 must read 13:00.
+ */
 export function formatResetClock(resetsAtMs, nowMs = Date.now()) {
     if (resetsAtMs === null || resetsAtMs === undefined)
         return null;
-    const dt = GLib.DateTime.new_from_unix_local(Math.floor(resetsAtMs / 1000));
+    const dt = GLib.DateTime.new_from_unix_local(Math.round(resetsAtMs / 60000) * 60);
     const now = GLib.DateTime.new_from_unix_local(Math.floor(nowMs / 1000));
     const sameDay = dt.get_year() === now.get_year() && dt.get_day_of_year() === now.get_day_of_year();
     return dt.format(sameDay ? '%H:%M' : '%a %H:%M');
