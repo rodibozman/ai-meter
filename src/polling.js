@@ -72,6 +72,14 @@ export function fetchWait(state, now) {
 const CREDENTIAL_KINDS = ['no-credentials', 'bad-credentials', 'expired'];
 
 /**
+ * Whether `error` is a login problem (missing, unusable or expired), the
+ * failures a rewrite of the credentials file can fix.
+ */
+export function isCredentialsError(error) {
+    return CREDENTIAL_KINDS.includes(error?.kind);
+}
+
+/**
  * Delay in seconds before retrying after a failed fetch, and the new backoff.
  * A rate limit waits the longest of Retry-After, the refresh interval,
  * RATE_LIMIT_MIN_SECONDS and twice the current backoff (capped at
@@ -93,7 +101,7 @@ export function retryAfterError(error, backoff, interval) {
         return {next, backoff: next};
     }
     const base = Math.max(interval, 60);
-    if (CREDENTIAL_KINDS.includes(error?.kind))
+    if (isCredentialsError(error))
         return {next: base, backoff: 0};
     const next = Math.min(backoff ? backoff * 2 : base, MAX_BACKOFF_SECONDS);
     return {next, backoff: next};

@@ -1,7 +1,8 @@
 // Offline tests of readCredentials (and the plan name it derives), on
 // temporary files: `gjs -m test/credentials.js` from the repo root.
 import GLib from 'gi://GLib';
-import {readCredentials, defaultCredentialsPath} from '../src/usage.js';
+import Gio from 'gi://Gio';
+import {readCredentials, watchCredentials, defaultCredentialsPath} from '../src/usage.js';
 import {assert, assertThrows, main} from './harness.js';
 
 const dir = GLib.dir_make_tmp('ai-meter-test-XXXXXX');
@@ -10,6 +11,21 @@ const file = GLib.build_filenamev([dir, 'creds.json']);
 function write(content) {
     GLib.file_set_contents(file, typeof content === 'string' ? content : JSON.stringify(content));
     return file;
+}
+
+// Calls `action`, then waits `ms` on the main loop and returns how many times
+// the watcher fired.
+function firesAfter(action, ms = 500) {
+    let fired = 0;
+    const monitor = watchCredentials(file, () => fired++);
+    action();
+    return new Promise(resolve => {
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+            monitor.cancel();
+            resolve(fired);
+            return GLib.SOURCE_REMOVE;
+        });
+    });
 }
 
 async function plan(subscriptionType, rateLimitTier) {
@@ -57,6 +73,28 @@ main(async () => {
         await assertThrows(() => readCredentials(file), 'JSON null', e => e.kind === 'bad-credentials');
         write('[]');
         await assertThrows(() => readCredentials(file), 'JSON array', e => e.kind === 'bad-credentials');
+
+        // Watching: every way Claude Code may rewrite the file is seen.
+        write({});
+        const tmp = `${dir}/creds.json.tmp`;
+        assert(await firesAfter(() => {
+            const stream = Gio.File.new_for_path(file).replace(null, false, Gio.FileCreateFlags.NONE, null);
+            stream.close(null);
+        }) >= 1, 'watcher sees g_file_replace');
+        assert(await firesAfter(() => write({claudeAiOauth: {accessToken: 'new'}})) >= 1, 'watcher sees an atomic write');
+        assert(await firesAfter(() => {
+            GLib.file_set_contents(tmp, '{}');
+            GLib.rename(tmp, file);
+        }) >= 1, 'watcher sees a file renamed over it');
+        assert(await firesAfter(() => {
+            const stream = Gio.File.new_for_path(file).open_readwrite(null);
+            stream.truncate(0, null);
+            stream.close(null);
+        }) >= 1, 'watcher sees an in-place write');
+        assert(await firesAfter(() => GLib.unlink(file)) === 0, 'watcher ignores a deletion');
+        assert(await firesAfter(() => write({})) >= 1, 'watcher sees the file created again');
+        assert(await firesAfter(() => GLib.file_set_contents(`${dir}/other.json`, '{}')) === 0, 'watcher ignores other files');
+        GLib.unlink(`${dir}/other.json`);
     } finally {
         GLib.unlink(file);
         GLib.rmdir(dir);

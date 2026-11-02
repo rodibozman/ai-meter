@@ -1,7 +1,7 @@
 // Offline tests of src/polling.js, the decisions behind the refresh loop:
 // `gjs -m test/polling.js` from the repo root.
 import {
-    severity, fetchWait, retryAfterError, newPollState, pollTiming, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
+    severity, fetchWait, retryAfterError, isCredentialsError, newPollState, pollTiming, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
     RATE_LIMIT_MIN_SECONDS,
 } from '../src/polling.js';
 import {assert, assertEqual, main} from './harness.js';
@@ -85,4 +85,11 @@ main(() => {
         assertEqual(retryAfterError({kind}, 0, 30), {next: 60, backoff: 0}, `${kind} waits at least 60 s`);
     }
     assertEqual(retryAfterError({kind: 'network'}, 0, 120), {next: 120, backoff: 120}, 'a network error after a credentials one backs off again');
+
+    // A rewrite of the credentials file triggers a fetch only after these.
+    for (const kind of ['no-credentials', 'bad-credentials', 'expired'])
+        assert(isCredentialsError({kind}), `${kind} is a credentials error`);
+    for (const kind of ['rate-limited', 'network', 'http', 'parse'])
+        assert(!isCredentialsError({kind}), `${kind} is not a credentials error`);
+    assert(!isCredentialsError(null) && !isCredentialsError({}), 'no error is not a credentials error');
 });
