@@ -57,6 +57,7 @@ No `Co-Authored-By` or tool trailers.
 - Style is enforced by `eslint.config.js`: 4 spaces, single quotes, semicolons, `const` by default. Run `npm run lint` or `make lint`.
 - Target GNOME Shell 45 to 49. No API that only exists on one of them without a fallback. Check `shell-version` in `src/metadata.json` when you rely on something new.
 - Everything created in `enable()` or `_init()` is torn down in `disable()` or `destroy()`: timers (`GLib.source_remove`), signal handlers, the Soup session. A GNOME reviewer rejects leaks.
+- Follow the [EGO best practices](https://gjs.guide/extensions/review-guidelines/best-practices.html) reviewers check against: no `_destroyed`-style flags (cancel a `Gio.Cancellable` instead), no `?.`, `typeof` or `try` around calls that cannot fail, no comments that only restate the code, each class cleans up what it creates.
 - No synchronous I/O or spawning in the Shell process. `src/usage.js` is async end to end; keep it and `src/polling.js` free of Shell imports so `make test` keeps working. New behaviour in either gets a test in the matching `test/` file.
 - The usage endpoint rate-limits per account and Claude Code polls it too. Never fetch twice within 30 seconds, always honour `Retry-After`, keep showing the last good values on error.
 - Never write to the credentials file, never log the token, never add a network call to another host.
