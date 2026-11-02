@@ -9,7 +9,9 @@ A GNOME Shell extension (GJS, ES modules) that shows Claude Pro/Max usage in the
 Layout:
 
 - `src/usage.js`: fetch and parse. No GNOME Shell import, so it runs under plain `gjs`.
-- `src/extension.js`: the indicator, the dropdown, the polling loop.
+- `src/extension.js`: the entry point, `enable()` and `disable()` only.
+- `src/indicator.js`: the top-bar button, the dropdown, the polling loop.
+- `src/meter.js`: the cairo bar and the meter row of the dropdown.
 - `src/polling.js`: the decisions of that loop (minimum gap, backoff, Retry-After, colour thresholds). No Shell import either.
 - `src/prefs.js` and `src/schemas/`: the settings window and its GSettings schema.
 - `install.sh`, `Makefile`, `.github/workflows/ci.yml`: install, checks, release.
