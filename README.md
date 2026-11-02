@@ -14,7 +14,9 @@ Works on GNOME Shell 45 to 49 (Ubuntu 24.04 and later).
 
 ## Install
 
-One line, no clone needed:
+From GNOME Extensions: [extensions.gnome.org/extension/11541/ai-meter](https://extensions.gnome.org/extension/11541/ai-meter/), then switch it on there.
+
+Or in one line, no clone needed:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/rodibozman/ai-meter/main/install.sh | sh
