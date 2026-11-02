@@ -2,7 +2,7 @@
 // temporary files: `gjs -m test/credentials.js` from the repo root.
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
-import {readCredentials, watchCredentials, defaultCredentialsPath} from '../src/usage.js';
+import {readCredentials, CredentialsWatcher, defaultCredentialsPath} from '../src/usage.js';
 import {assert, assertThrows, main} from './harness.js';
 
 const dir = GLib.dir_make_tmp('ai-meter-test-XXXXXX');
@@ -14,14 +14,17 @@ function write(content) {
 }
 
 // Calls `action`, then waits `ms` on the main loop and returns how many times
-// the watcher fired.
-function firesAfter(action, ms = 500) {
+// the watcher fired. With `destroyFirst` the watcher is destroyed before.
+function firesAfter(action, {ms = 500, destroyFirst = false} = {}) {
     let fired = 0;
-    const monitor = watchCredentials(file, () => fired++);
+    const watcher = new CredentialsWatcher(file, () => fired++);
+    if (destroyFirst)
+        watcher.destroy();
     action();
     return new Promise(resolve => {
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
-            monitor.cancel();
+            if (!destroyFirst)
+                watcher.destroy();
             resolve(fired);
             return GLib.SOURCE_REMOVE;
         });
@@ -95,6 +98,7 @@ main(async () => {
         assert(await firesAfter(() => write({})) >= 1, 'watcher sees the file created again');
         assert(await firesAfter(() => GLib.file_set_contents(`${dir}/other.json`, '{}')) === 0, 'watcher ignores other files');
         GLib.unlink(`${dir}/other.json`);
+        assert(await firesAfter(() => write({}), {destroyFirst: true}) === 0, 'a destroyed watcher stays quiet');
     } finally {
         GLib.unlink(file);
         GLib.rmdir(dir);

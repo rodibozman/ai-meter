@@ -10,7 +10,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {
-    fetchUsage, watchCredentials, defaultCredentialsPath, formatDuration, USER_AGENT,
+    fetchUsage, CredentialsWatcher, defaultCredentialsPath, formatDuration, USER_AGENT,
 } from './usage.js';
 import {
     severity, fetchWait, retryAfterError, isCredentialsError, initialDelay,
@@ -29,13 +29,15 @@ class AiMeterIndicator extends PanelMenu.Button {
         this._extension = extension;
         this._settings = settings;
         this._http = new Soup.Session({timeout: 15, user_agent: USER_AGENT});
+        // Cancelled by destroy(): stops a fetch under way and tells its
+        // caller not to touch the destroyed indicator.
+        this._cancellable = new Gio.Cancellable();
         this._timerId = 0;
         this._menuTickId = 0;
         // Shared with the extension and any indicator created after this one.
         this._state = state;
-        this._destroyed = false;
         this._refreshing = false;
-        this._credentialsMonitor = null;
+        this._credentialsWatcher = null;
         // Set when the credentials file changes during a fetch.
         this._credentialsChanged = false;
 
@@ -121,10 +123,10 @@ class AiMeterIndicator extends PanelMenu.Button {
     }
 
     _watchCredentials() {
-        this._credentialsMonitor?.cancel();
-        this._credentialsMonitor = null;
+        this._credentialsWatcher?.destroy();
+        this._credentialsWatcher = null;
         try {
-            this._credentialsMonitor = watchCredentials(this._credentialsPath(), () => this._onCredentialsChanged());
+            this._credentialsWatcher = new CredentialsWatcher(this._credentialsPath(), () => this._onCredentialsChanged());
         } catch (e) {
             // Not fatal: a new login is still seen at the next refresh.
             console.warn(`[ai-meter] cannot watch the credentials file: ${e.message}`);
@@ -137,8 +139,6 @@ class AiMeterIndicator extends PanelMenu.Button {
     // while the last fetch failed on the login, so a working meter makes no
     // extra calls.
     _onCredentialsChanged() {
-        if (this._destroyed)
-            return;
         if (this._refreshing) {
             this._credentialsChanged = true;
             return;
@@ -155,8 +155,6 @@ class AiMeterIndicator extends PanelMenu.Button {
             GLib.source_remove(this._timerId);
             this._timerId = 0;
         }
-        if (this._destroyed)
-            return;
         if (seconds <= 0) {
             this._refresh();
             return;
@@ -169,7 +167,7 @@ class AiMeterIndicator extends PanelMenu.Button {
     }
 
     async _refresh() {
-        if (this._destroyed || this._refreshing)
+        if (this._refreshing)
             return;
         const now = Date.now();
         const wait = fetchWait(this._state, now);
@@ -182,15 +180,16 @@ class AiMeterIndicator extends PanelMenu.Button {
         this._credentialsChanged = false;
         this._state.lastAttempt = now;
         this._render();
+        const cancellable = this._cancellable;
         let next;
         try {
-            const {usage, plan} = await fetchUsage(this._http, this._credentialsPath());
+            const {usage, plan} = await fetchUsage(this._http, this._credentialsPath(), cancellable);
             Object.assign(this._state, {usage, plan, error: null, fetchedAt: Date.now(), nextTry: 0, backoff: 0});
             next = this._settings.get_int('refresh-interval');
         } catch (e) {
-            // destroy() aborted the request (disable, lock screen, position
+            // destroy() cancelled the fetch (disable, lock screen, position
             // change): not an error worth a log line or a retry.
-            if (this._destroyed)
+            if (cancellable.is_cancelled())
                 return;
             this._state.error = e;
             const kind = e.kind ?? 'unknown';
@@ -205,8 +204,6 @@ class AiMeterIndicator extends PanelMenu.Button {
         } finally {
             this._refreshing = false;
         }
-        if (this._destroyed)
-            return;
         if (this._credentialsChanged && isCredentialsError(this._state.error)) {
             // The file was rewritten while this fetch used the old login.
             this._state.nextTry = 0;
@@ -221,8 +218,6 @@ class AiMeterIndicator extends PanelMenu.Button {
     }
 
     _render() {
-        if (this._destroyed)
-            return;
         const now = Date.now();
         const {usage, plan, error, fetchedAt} = this._state;
         const [warn, crit] = this._thresholds();
@@ -333,17 +328,21 @@ class AiMeterIndicator extends PanelMenu.Button {
     }
 
     destroy() {
-        this._destroyed = true;
-        if (this._timerId)
+        if (this._timerId) {
             GLib.source_remove(this._timerId);
-        if (this._menuTickId)
+            this._timerId = 0;
+        }
+        if (this._menuTickId) {
             GLib.source_remove(this._menuTickId);
-        this._timerId = this._menuTickId = 0;
+            this._menuTickId = 0;
+        }
         for (const id of this._settingsIds)
             this._settings.disconnect(id);
         this._settingsIds = [];
-        this._credentialsMonitor?.cancel();
-        this._credentialsMonitor = null;
+        this._credentialsWatcher?.destroy();
+        this._credentialsWatcher = null;
+        this._cancellable.cancel();
+        this._cancellable = null;
         this._http.abort();
         this._http = null;
         super.destroy();

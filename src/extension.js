@@ -22,10 +22,8 @@ export default class AiMeterExtension extends Extension {
     }
 
     disable() {
-        if (this._positionId) {
-            this._settings.disconnect(this._positionId);
-            this._positionId = 0;
-        }
+        this._settings.disconnect(this._positionId);
+        this._positionId = 0;
         this._removeIndicator();
         this._timing = pollTiming(this._pollState);
         this._pollState = null;
@@ -38,7 +36,7 @@ export default class AiMeterExtension extends Extension {
     }
 
     _removeIndicator() {
-        this._indicator?.destroy();
+        this._indicator.destroy();
         this._indicator = null;
     }
 }
