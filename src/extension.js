@@ -11,11 +11,16 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {
-    fetchUsage, defaultCredentialsPath, formatDuration, formatResetClock, USER_AGENT,
+    fetchUsage, watchCredentials, defaultCredentialsPath, formatDuration, formatResetClock, USER_AGENT,
 } from './usage.js';
-import {severity, fetchWait, retryAfterError, initialDelay, newPollState, pollTiming} from './polling.js';
+import {
+    severity, fetchWait, retryAfterError, isCredentialsError, initialDelay, newPollState, pollTiming,
+} from './polling.js';
 
 const MENU_TICK_SECONDS = 30;
+// Delay between a write of the credentials file and the fetch it triggers,
+// so the several events of one write give a single fetch.
+const CREDENTIALS_SETTLE_SECONDS = 1;
 
 // St.BoxLayout's `vertical` is deprecated from GNOME 48 in favour of
 // `orientation`, which GNOME 45 to 47 do not have.
@@ -126,6 +131,9 @@ class AiMeterIndicator extends PanelMenu.Button {
         this._state = state;
         this._destroyed = false;
         this._refreshing = false;
+        this._credentialsMonitor = null;
+        // Set when the credentials file changes during a fetch.
+        this._credentialsChanged = false;
 
         // Top bar content.
         const box = new St.BoxLayout({style_class: 'ai-meter-panel-box', y_align: Clutter.ActorAlign.CENTER});
@@ -145,11 +153,15 @@ class AiMeterIndicator extends PanelMenu.Button {
 
         this._settingsIds = [
             settings.connect('changed::refresh-interval', () => this._schedule(0)),
-            settings.connect('changed::credentials-path', () => this._schedule(0)),
+            settings.connect('changed::credentials-path', () => {
+                this._watchCredentials();
+                this._schedule(0);
+            }),
             settings.connect('changed', () => this._render()),
         ];
         this.menu.connect('open-state-changed', (_m, open) => this._onMenuToggled(open));
 
+        this._watchCredentials();
         this._render();
         this._schedule(initialDelay(this._state, settings.get_int('refresh-interval'), Date.now()));
     }
@@ -204,6 +216,36 @@ class AiMeterIndicator extends PanelMenu.Button {
         return p === '' ? defaultCredentialsPath() : p.replace(/^~(?=\/|$)/, GLib.get_home_dir());
     }
 
+    _watchCredentials() {
+        this._credentialsMonitor?.cancel();
+        this._credentialsMonitor = null;
+        try {
+            this._credentialsMonitor = watchCredentials(this._credentialsPath(), () => this._onCredentialsChanged());
+        } catch (e) {
+            // Not fatal: a new login is still seen at the next refresh.
+            console.warn(`[ai-meter] cannot watch the credentials file: ${e.message}`);
+        }
+    }
+
+    // Claude Code renews its token (it lasts 8 hours) only when it runs, so
+    // after a night off the meter shows `expired` until it does: fetch as
+    // soon as the file is rewritten instead of at the next refresh. Only
+    // while the last fetch failed on the login, so a working meter makes no
+    // extra calls.
+    _onCredentialsChanged() {
+        if (this._destroyed)
+            return;
+        if (this._refreshing) {
+            this._credentialsChanged = true;
+            return;
+        }
+        if (!isCredentialsError(this._state.error))
+            return;
+        // That wait was only there to see a new login; the minimum gap stays.
+        this._state.nextTry = 0;
+        this._schedule(CREDENTIALS_SETTLE_SECONDS);
+    }
+
     _schedule(seconds) {
         if (this._timerId) {
             GLib.source_remove(this._timerId);
@@ -233,6 +275,7 @@ class AiMeterIndicator extends PanelMenu.Button {
             return;
         }
         this._refreshing = true;
+        this._credentialsChanged = false;
         this._state.lastAttempt = now;
         this._render();
         let next;
@@ -260,6 +303,11 @@ class AiMeterIndicator extends PanelMenu.Button {
         }
         if (this._destroyed)
             return;
+        if (this._credentialsChanged && isCredentialsError(this._state.error)) {
+            // The file was rewritten while this fetch used the old login.
+            this._state.nextTry = 0;
+            next = CREDENTIALS_SETTLE_SECONDS;
+        }
         this._render();
         this._schedule(next);
     }
@@ -350,7 +398,7 @@ class AiMeterIndicator extends PanelMenu.Button {
         case 'bad-credentials':
             return 'The credentials file has no Claude login. Run `claude` in a terminal and sign in.';
         case 'expired':
-            return 'Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up on the next refresh.';
+            return 'Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up as soon as it does.';
         case 'rate-limited': {
             const left = formatDuration(this._state.nextTry - Date.now());
             return `The usage API allows only a few calls per few minutes per account, shared with Claude Code. Next try in ${left ?? 'a moment'}.`;
@@ -390,6 +438,8 @@ class AiMeterIndicator extends PanelMenu.Button {
         for (const id of this._settingsIds)
             this._settings.disconnect(id);
         this._settingsIds = [];
+        this._credentialsMonitor?.cancel();
+        this._credentialsMonitor = null;
         this._http.abort();
         this._http = null;
         super.destroy();

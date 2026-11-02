@@ -58,6 +58,25 @@ export async function readCredentials(path) {
     };
 }
 
+/**
+ * Calls `onChange` each time the credentials file is written, created or
+ * replaced (Claude Code renewing or changing its login). Every way of
+ * writing it (in place, or a temporary file renamed over it) ends with
+ * CHANGES_DONE_HINT; a deletion is not reported.
+ *
+ * @param {string} path
+ * @param {() => void} onChange
+ * @returns {Gio.FileMonitor} cancel() it to stop watching
+ */
+export function watchCredentials(path, onChange) {
+    const monitor = Gio.File.new_for_path(path).monitor_file(Gio.FileMonitorFlags.NONE, null);
+    monitor.connect('changed', (_monitor, _file, _other, event) => {
+        if (event === Gio.FileMonitorEvent.CHANGES_DONE_HINT)
+            onChange();
+    });
+    return monitor;
+}
+
 function planName(subscription, tier) {
     const plan = typeof subscription === 'string' && subscription !== ''
         ? subscription[0].toUpperCase() + subscription.slice(1)
