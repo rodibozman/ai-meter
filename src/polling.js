@@ -98,8 +98,9 @@ export function isCredentialsError(error) {
  * RATE_LIMIT_MIN_SECONDS and twice the current backoff (capped at
  * MAX_BACKOFF_SECONDS), so repeated 429s space out and leave the budget to
  * Claude Code; a credentials problem retries at the refresh interval (at
- * least 60 s) without backoff; anything else doubles the backoff from that
- * interval up to MAX_BACKOFF_SECONDS.
+ * least 60 s) without backoff; a network error (no request reached the API,
+ * often the network not up yet after login) doubles the backoff from 60 s;
+ * anything else doubles it from that interval. Both up to MAX_BACKOFF_SECONDS.
  *
  * @param {{kind?: string, retryAfter?: number}} error
  * @param {number} backoff current backoff in seconds, 0 when none
@@ -116,6 +117,10 @@ export function retryAfterError(error, backoff, interval) {
     const base = Math.max(interval, 60);
     if (isCredentialsError(error))
         return {next: base, backoff: 0};
+    if (error?.kind === 'network') {
+        const next = Math.min(backoff ? backoff * 2 : MIN_FETCH_GAP_MS / 1000, MAX_BACKOFF_SECONDS);
+        return {next, backoff: next};
+    }
     const next = Math.min(backoff ? backoff * 2 : base, MAX_BACKOFF_SECONDS);
     return {next, backoff: next};
 }

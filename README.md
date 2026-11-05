@@ -54,7 +54,7 @@ Click the indicator, then **Settings** (or use the Extensions app):
 
 Claude Code stores an OAuth token in `~/.claude/.credentials.json` when you sign in. AI Meter reads that token and calls the same usage endpoint the `/usage` command of Claude Code calls, `https://api.anthropic.com/api/oauth/usage`. Nothing is written back, and nothing else leaves your machine.
 
-The endpoint allows only a few calls per few minutes per account, and Claude Code polls it too (for its own usage display), so the extension never calls it more than once per 60 s, waits at least 5 minutes after a 429 (longer when `Retry-After` asks for it, and doubling while the 429s go on), and keeps showing the last values meanwhile.
+The endpoint allows only a few calls per few minutes per account, and Claude Code polls it too (for its own usage display), so the extension never calls it more than once per 60 s, waits at least 5 minutes after a 429 (longer when `Retry-After` asks for it, and doubling while the 429s go on), and keeps showing the last values meanwhile. After a network error (typically right after login) it retries after 60 s, doubling up to 15 minutes, and fetches as soon as the network comes back.
 
 When the token expires, the bar shows `expired`: open Claude Code (run `claude` in a terminal) and it renews the file; the meter fetches again as soon as the file is rewritten (at most once a minute). If the file is missing, the bar shows `no login`.
 

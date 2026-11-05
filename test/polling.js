@@ -70,23 +70,29 @@ main(() => {
     assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 1200}, 900, 120), {next: 1200, backoff: 1200}, 'Retry-After above the cap still wins');
     assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 10}, 1200, 120), {next: 900, backoff: 900}, 'the doubling itself is capped at 900 s');
 
-    // Anything else: exponential backoff from the interval up to the cap.
-    let b = 0;
-    const seen = [];
-    for (let i = 0; i < 6; i++) {
-        const r = retryAfterError({kind: 'network'}, b, 120);
-        assert(r.next === r.backoff, `retry ${i + 1}: next equals the new backoff`);
-        b = r.backoff;
-        seen.push(r.next);
-    }
-    assertEqual(seen, [120, 240, 480, 900, 900, 900], 'backoff doubles from the interval and caps at 900 s');
+    // Exponential backoff up to the cap: from the interval for most errors,
+    // from 60 s for a network one (the network not up yet after login).
+    const backoffs = (kind, interval) => {
+        let b = 0;
+        const seen = [];
+        for (let i = 0; i < 6; i++) {
+            const r = retryAfterError({kind}, b, interval);
+            assert(r.next === r.backoff, `${kind} retry ${i + 1}: next equals the new backoff`);
+            b = r.backoff;
+            seen.push(r.next);
+        }
+        return seen;
+    };
+    assertEqual(backoffs('http', 120), [120, 240, 480, 900, 900, 900], 'backoff doubles from the interval and caps at 900 s');
+    assertEqual(backoffs('network', 300), [60, 120, 240, 480, 900, 900], 'a network error doubles from 60 s, whatever the interval');
+    assertEqual(backoffs('network', 30), [60, 120, 240, 480, 900, 900], 'and never retries sooner than the minimum gap');
     assert(MAX_BACKOFF_SECONDS === 900, 'cap is 15 minutes');
     assertEqual(retryAfterError({kind: 'http'}, 0, 30), {next: 60, backoff: 60}, 'interval below a minute starts at 60 s');
     assertEqual(retryAfterError({kind: 'parse'}, 0, 3600), {next: 900, backoff: 900}, 'interval above the cap starts at the cap');
     assertEqual(retryAfterError({}, 0, 120), {next: 120, backoff: 120}, 'error without a kind backs off');
     assertEqual(retryAfterError(null, 240, 120), {next: 480, backoff: 480}, 'null error backs off');
     assertEqual(retryAfterError({kind: 'rate-limited', retryAfter: 90}, 480, 120), {next: 900, backoff: 900}, 'a rate limit after backoffs keeps doubling');
-    assertEqual(retryAfterError({kind: 'network'}, 0, 120), {next: 120, backoff: 120}, 'next failure restarts from the interval');
+    assertEqual(retryAfterError({kind: 'http'}, 0, 120), {next: 120, backoff: 120}, 'next failure restarts from the interval');
 
     // Credentials problems: the user fixes them by signing in, so poll at the
     // interval and see the new login on the next refresh.
@@ -95,7 +101,7 @@ main(() => {
         assertEqual(retryAfterError({kind}, 480, 120), {next: 120, backoff: 0}, `${kind} after backoffs resets them`);
         assertEqual(retryAfterError({kind}, 0, 30), {next: 60, backoff: 0}, `${kind} waits at least 60 s`);
     }
-    assertEqual(retryAfterError({kind: 'network'}, 0, 120), {next: 120, backoff: 120}, 'a network error after a credentials one backs off again');
+    assertEqual(retryAfterError({kind: 'network'}, 0, 120), {next: 60, backoff: 60}, 'a network error after a credentials one backs off again');
 
     // A rewrite of the credentials file triggers a fetch only after these.
     for (const kind of ['no-credentials', 'bad-credentials', 'expired'])

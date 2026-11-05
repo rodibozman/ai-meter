@@ -21,6 +21,8 @@ const MENU_TICK_SECONDS = 30;
 // Delay between a write of the credentials file and the fetch it triggers,
 // so the several events of one write give a single fetch.
 const CREDENTIALS_SETTLE_SECONDS = 1;
+// Same for the network coming back, which often sends several signals.
+const NETWORK_SETTLE_SECONDS = 2;
 
 /** A dropdown row that only displays something. */
 function staticItem() {
@@ -69,6 +71,8 @@ class AiMeterIndicator extends PanelMenu.Button {
             settings.connect('changed', () => this._render()),
         ];
         this.menu.connect('open-state-changed', (_m, open) => this._onMenuToggled(open));
+        this._networkMonitor = Gio.NetworkMonitor.get_default();
+        this._networkId = this._networkMonitor.connect('network-changed', (_m, available) => this._onNetworkChanged(available));
 
         this._watchCredentials();
         this._render();
@@ -151,6 +155,17 @@ class AiMeterIndicator extends PanelMenu.Button {
         // That wait was only there to see a new login; the minimum gap stays.
         this._state.nextTry = 0;
         this._schedule(CREDENTIALS_SETTLE_SECONDS);
+    }
+
+    // At login the first fetch often runs before the network is up and fails
+    // on DNS: fetch again as soon as it is up instead of after the backoff.
+    // Only while the last fetch failed on the network, so a working meter
+    // makes no extra calls; the minimum gap still applies.
+    _onNetworkChanged(available) {
+        if (!available || this._refreshing || this._state.error?.kind !== 'network')
+            return;
+        this._state.nextTry = 0;
+        this._schedule(NETWORK_SETTLE_SECONDS);
     }
 
     _schedule(seconds) {
@@ -334,6 +349,8 @@ class AiMeterIndicator extends PanelMenu.Button {
         for (const id of this._settingsIds)
             this._settings.disconnect(id);
         this._settingsIds = [];
+        this._networkMonitor.disconnect(this._networkId);
+        this._networkMonitor = null;
         this._credentialsWatcher?.destroy();
         this._credentialsWatcher = null;
         this._cancellable.cancel();
