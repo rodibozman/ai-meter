@@ -110,8 +110,8 @@ msgid "Language"
 msgstr "Langue"
 
 #: src/prefs.js
-msgid "Automatic follows the system language, or English when there is no translation for it. Reopen this window to see it in the new language."
-msgstr "« Automatique » suit la langue du système, ou l’anglais s’il n’existe pas de traduction pour celle-ci. Rouvrez cette fenêtre pour la voir dans la nouvelle langue."
+msgid "Automatic follows the system language, or English when there is no translation for it."
+msgstr "« Automatique » suit la langue du système, ou l’anglais s’il n’existe pas de traduction pour celle-ci."
 
 #: src/prefs.js
 msgid "Automatic"

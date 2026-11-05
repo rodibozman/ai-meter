@@ -16,21 +16,52 @@ const DISPLAY_MODES = [
 export default class AiMeterPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
+        let page = this._buildPage(settings);
+        window.add(page);
+
+        // A new language rebuilds the page in it. From an idle callback: the
+        // change comes from the language row's own signal, and that row is
+        // destroyed with the old page.
+        let idleId = 0;
+        const languageId = settings.connect('changed::language', () => {
+            if (idleId)
+                return;
+            idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                idleId = 0;
+                window.remove(page);
+                page = this._buildPage(settings);
+                window.add(page);
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+        window.connect('close-request', () => {
+            settings.disconnect(languageId);
+            if (idleId)
+                GLib.source_remove(idleId);
+            idleId = 0;
+            return false;
+        });
+    }
+
+    _loadTexts(settings) {
         const lang = pickLanguage(settings.get_string('language'), GLib.get_language_names());
         try {
             setCatalog(loadCatalogSync(this.path, lang));
         } catch (e) {
             console.warn(`[ai-meter] cannot read the ${lang} translation, using English: ${e.message}`);
+            setCatalog(new Map());
         }
+    }
 
+    _buildPage(settings) {
+        this._loadTexts(settings);
         const page = new Adw.PreferencesPage({title: 'AI Meter', icon_name: 'preferences-system-symbolic'});
-        window.add(page);
 
         const general = new Adw.PreferencesGroup();
         page.add(general);
         // Language names stay in their own language, so anyone can find theirs.
         general.add(this._combo(settings, 'language', _('Language'),
-            _('Automatic follows the system language, or English when there is no translation for it. Reopen this window to see it in the new language.'),
+            _('Automatic follows the system language, or English when there is no translation for it.'),
             [['', _('Automatic')], ...LANGUAGES]));
 
         const panel = new Adw.PreferencesGroup({title: _('Top bar')});
@@ -64,6 +95,7 @@ export default class AiMeterPreferences extends ExtensionPreferences {
             subtitle: _('The file Claude Code writes when you sign in. Only the access token is read; nothing is written.'),
         });
         data.add(hint);
+        return page;
     }
 
     // A drop-down for a string key, `choices` being [value, label] pairs.
