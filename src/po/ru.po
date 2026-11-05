@@ -1,0 +1,256 @@
+# Russian translation of AI Meter.
+# This file is distributed under the same license as AI Meter (MIT).
+#
+# Keep {placeholders}, `commands` and paths exactly as they are: make test checks it.
+msgid ""
+msgstr ""
+"Project-Id-Version: ai-meter\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/indicator.js
+msgid "Claude usage"
+msgstr "Использование Claude"
+
+#: src/indicator.js
+msgid "Extra usage"
+msgstr "Дополнительное использование"
+
+#: src/indicator.js
+msgid "Refresh"
+msgstr "Обновить"
+
+#: src/indicator.js
+msgid "Settings"
+msgstr "Настройки"
+
+#. Shown in the top bar instead of the percentage: keep it short.
+#: src/indicator.js
+msgid "no login"
+msgstr "нет входа"
+
+#. Shown in the top bar instead of the percentage: keep it short.
+#: src/indicator.js
+msgid "expired"
+msgstr "вход истёк"
+
+#: src/indicator.js
+msgid "Updated just now"
+msgstr "Обновлено только что"
+
+#: src/indicator.js
+msgid "Updated {age} ago"
+msgstr "Обновлено {age} назад"
+
+#: src/indicator.js
+msgid "Fetching…"
+msgstr "Загрузка…"
+
+#: src/indicator.js
+msgid "Not fetched yet"
+msgstr "Ещё не загружено"
+
+#: src/indicator.js
+msgid "No Claude Code login found at {path}. Install Claude Code and run `claude` once to sign in."
+msgstr "В {path} не найден вход в Claude Code. Установите Claude Code и один раз запустите `claude`, чтобы войти."
+
+#: src/indicator.js
+msgid "The credentials file has no Claude login. Run `claude` in a terminal and sign in."
+msgstr "В файле учётных данных нет входа в Claude. Запустите `claude` в терминале и войдите."
+
+#: src/indicator.js
+msgid "Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up as soon as it does."
+msgstr "Срок действия входа в Claude Code истёк. Откройте Claude Code (запустите `claude` в терминале), чтобы обновить его, — индикатор сразу это заметит."
+
+#: src/indicator.js
+msgid "The usage API allows only a few calls per few minutes per account, shared with Claude Code. Next try in {left}."
+msgstr "API использования разрешает лишь несколько запросов за несколько минут на один аккаунт, и этот лимит общий с Claude Code. Следующая попытка через {left}."
+
+#. Ends "Next try in {left}." when the wait is under a minute.
+#: src/indicator.js
+msgid "a moment"
+msgstr "мгновение"
+
+#: src/indicator.js
+msgid "Network error: {message}"
+msgstr "Ошибка сети: {message}"
+
+#: src/indicator.js
+msgid "Could not fetch usage: {message}"
+msgstr "Не удалось получить данные об использовании: {message}"
+
+#: src/meter.js
+msgid "Limit reached"
+msgstr "Лимит исчерпан"
+
+#: src/meter.js
+msgid "Limit reached, resets in {left} ({clock})"
+msgstr "Лимит исчерпан, сброс через {left} ({clock})"
+
+#: src/meter.js
+msgid "Resets in {left} ({clock})"
+msgstr "Сброс через {left} ({clock})"
+
+#: src/prefs.js
+msgid "Percentage"
+msgstr "Проценты"
+
+#: src/prefs.js
+msgid "Small bar"
+msgstr "Маленькая полоска"
+
+#: src/prefs.js
+msgid "Percentage and bar"
+msgstr "Проценты и полоска"
+
+#: src/prefs.js
+msgid "Language"
+msgstr "Язык"
+
+#: src/prefs.js
+msgid "Automatic follows the system language, or English when there is no translation for it."
+msgstr "«Автоматически» — язык системы, а если перевода на него нет — английский."
+
+#: src/prefs.js
+msgid "Automatic"
+msgstr "Автоматически"
+
+#: src/prefs.js
+msgid "Top bar"
+msgstr "Верхняя панель"
+
+#: src/prefs.js
+msgid "Show"
+msgstr "Показывать"
+
+#: src/prefs.js
+msgid "What the 5-hour window looks like in the bar"
+msgstr "Как 5-часовое окно выглядит на панели"
+
+#: src/prefs.js
+msgid "Show icon"
+msgstr "Показывать значок"
+
+#: src/prefs.js
+msgid "Also show the weekly percentage"
+msgstr "Показывать также недельный процент"
+
+#: src/prefs.js
+msgid "Shown after the 5-hour one, e.g. \"12% · 40%\""
+msgstr "Отображается после 5-часового, например «12% · 40%»"
+
+#: src/prefs.js
+msgid "Position"
+msgstr "Положение"
+
+#: src/prefs.js
+msgid "0 is the leftmost slot of the right-hand cluster, next to app indicators"
+msgstr "0 — крайнее левое место в правой группе, рядом со значками приложений"
+
+#: src/prefs.js
+msgid "Colors"
+msgstr "Цвета"
+
+#: src/prefs.js
+msgid "Percentages from which the indicator changes color"
+msgstr "Проценты, при которых индикатор меняет цвет"
+
+#: src/prefs.js
+msgid "Amber from"
+msgstr "Жёлтый от"
+
+#: src/prefs.js
+msgid "Red from"
+msgstr "Красный от"
+
+#: src/prefs.js
+msgid "Data"
+msgstr "Данные"
+
+#: src/prefs.js
+msgid "Refresh every (seconds)"
+msgstr "Интервал обновления (секунды)"
+
+#: src/prefs.js
+msgid "The usage API allows only a few calls per few minutes, shared with Claude Code"
+msgstr "API использования разрешает лишь несколько запросов за несколько минут, и этот лимит общий с Claude Code"
+
+#: src/prefs.js
+msgid "Claude Code credentials file"
+msgstr "Файл учётных данных Claude Code"
+
+#: src/prefs.js
+msgid "Leave empty for ~/.claude/.credentials.json"
+msgstr "Оставьте пустым, чтобы использовать ~/.claude/.credentials.json"
+
+#: src/prefs.js
+msgid "The file Claude Code writes when you sign in. Only the access token is read; nothing is written."
+msgstr "Файл, который Claude Code записывает при входе. Читается только токен доступа; ничего не записывается."
+
+#. Short day names, before the clock time of a reset ("Wed 06:00").
+#: src/usage.js
+msgid "Mon"
+msgstr "пн"
+
+#: src/usage.js
+msgid "Tue"
+msgstr "вт"
+
+#: src/usage.js
+msgid "Wed"
+msgstr "ср"
+
+#: src/usage.js
+msgid "Thu"
+msgstr "чт"
+
+#: src/usage.js
+msgid "Fri"
+msgstr "пт"
+
+#: src/usage.js
+msgid "Sat"
+msgstr "сб"
+
+#: src/usage.js
+msgid "Sun"
+msgstr "вс"
+
+#: src/usage.js
+msgid "5-hour window"
+msgstr "5-часовое окно"
+
+#: src/usage.js
+msgid "Weekly, all models"
+msgstr "За неделю, все модели"
+
+#: src/usage.js
+msgid "Weekly, apps"
+msgstr "За неделю, приложения"
+
+#. A per-model weekly limit whose model the API does not name.
+#: src/usage.js
+msgid "Weekly, scoped"
+msgstr "За неделю, прочее"
+
+#. {scope} is a model or product name from the API, e.g. "Fable".
+#: src/usage.js
+msgid "Weekly, {scope}"
+msgstr "За неделю, {scope}"
+
+#. Durations, shown in the top bar: keep them short. {m} is zero-padded after hours ("2h 05m").
+#: src/usage.js
+msgid "{m}m"
+msgstr "{m} мин"
+
+#. Durations, shown in the top bar: keep them short. {m} is zero-padded after hours ("2h 05m").
+#: src/usage.js
+msgid "{h}h {m}m"
+msgstr "{h} ч {m} мин"
+
+#. Durations, shown in the top bar: keep them short.
+#: src/usage.js
+msgid "{d}d {h}h"
+msgstr "{d} д {h} ч"

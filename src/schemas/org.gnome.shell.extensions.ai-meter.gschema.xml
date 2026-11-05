@@ -44,7 +44,7 @@
     </key>
     <key name="language" type="s">
       <default>''</default>
-      <summary>Language of the extension: a code with a translation ('en', 'fr', 'it'), or empty to follow the system</summary>
+      <summary>Language of the extension: a code from LANGUAGES in i18n.js ('en', 'fr', 'pt_BR', …), or empty to follow the system</summary>
     </key>
   </schema>
 </schemalist>

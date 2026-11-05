@@ -42,7 +42,7 @@ Click the indicator, then **Settings** (or use the Extensions app):
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| Language | Automatic | English, French or Italian. Automatic follows the system language, or English when there is no translation for it |
+| Language | Automatic | One of the 14 languages below. Automatic follows the system language, or English when there is no translation for it |
 | Show | Percentage | Percentage, a small bar, or both, in the top bar |
 | Show icon | on | The gauge icon before the number |
 | Also show the weekly percentage | off | `12% · 40%` instead of `12%` |
@@ -61,7 +61,7 @@ When the token expires, the bar shows `expired`: open Claude Code (run `claude` 
 
 ## Translations
 
-The texts are in English, French and Italian, one gettext file per language in `src/po/`. To add a language:
+The texts are in English, Arabic, Bengali, Chinese (simplified), French, Hindi, Indonesian, Italian, Japanese, Portuguese (Brazil), Russian, Spanish, Turkish and Urdu, one gettext file per language in `src/po/`. Automatic picks the first system language with a translation; Portuguese from Portugal gets the Brazilian one, Traditional Chinese gets English. To add a language:
 
 1. Copy `src/po/ai-meter.pot` to `src/po/<code>.po` (e.g. `de.po`) and fill in each `msgstr`, with any `.po` editor (Poedit, GNOME Translation Editor) or by hand.
 2. Add `['<code>', '<name of the language in that language>']` to `LANGUAGES` in `src/i18n.js`.
