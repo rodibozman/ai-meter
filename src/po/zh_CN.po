@@ -1,0 +1,256 @@
+# Simplified Chinese translation of AI Meter.
+# This file is distributed under the same license as AI Meter (MIT).
+#
+# Keep {placeholders}, `commands` and paths exactly as they are: make test checks it.
+msgid ""
+msgstr ""
+"Project-Id-Version: ai-meter\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/indicator.js
+msgid "Claude usage"
+msgstr "Claude 用量"
+
+#: src/indicator.js
+msgid "Extra usage"
+msgstr "额外用量"
+
+#: src/indicator.js
+msgid "Refresh"
+msgstr "刷新"
+
+#: src/indicator.js
+msgid "Settings"
+msgstr "设置"
+
+#. Shown in the top bar instead of the percentage: keep it short.
+#: src/indicator.js
+msgid "no login"
+msgstr "未登录"
+
+#. Shown in the top bar instead of the percentage: keep it short.
+#: src/indicator.js
+msgid "expired"
+msgstr "已过期"
+
+#: src/indicator.js
+msgid "Updated just now"
+msgstr "刚刚更新"
+
+#: src/indicator.js
+msgid "Updated {age} ago"
+msgstr "{age}前更新"
+
+#: src/indicator.js
+msgid "Fetching…"
+msgstr "正在获取…"
+
+#: src/indicator.js
+msgid "Not fetched yet"
+msgstr "尚未获取"
+
+#: src/indicator.js
+msgid "No Claude Code login found at {path}. Install Claude Code and run `claude` once to sign in."
+msgstr "在 {path} 中找不到 Claude Code 的登录信息。请安装 Claude Code，并运行一次 `claude` 完成登录。"
+
+#: src/indicator.js
+msgid "The credentials file has no Claude login. Run `claude` in a terminal and sign in."
+msgstr "凭据文件中没有 Claude 登录信息。请在终端中运行 `claude` 并登录。"
+
+#: src/indicator.js
+msgid "Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up as soon as it does."
+msgstr "Claude Code 登录已过期。请打开 Claude Code（在终端中运行 `claude`）续期，续期后指示器会立即更新。"
+
+#: src/indicator.js
+msgid "The usage API allows only a few calls per few minutes per account, shared with Claude Code. Next try in {left}."
+msgstr "用量 API 每个账户每隔几分钟只能调用几次，且这一额度与 Claude Code 共享。{left}后重试。"
+
+#. Ends "Next try in {left}." when the wait is under a minute.
+#: src/indicator.js
+msgid "a moment"
+msgstr "稍"
+
+#: src/indicator.js
+msgid "Network error: {message}"
+msgstr "网络错误：{message}"
+
+#: src/indicator.js
+msgid "Could not fetch usage: {message}"
+msgstr "无法获取用量：{message}"
+
+#: src/meter.js
+msgid "Limit reached"
+msgstr "已达上限"
+
+#: src/meter.js
+msgid "Limit reached, resets in {left} ({clock})"
+msgstr "已达上限，{left}后重置（{clock}）"
+
+#: src/meter.js
+msgid "Resets in {left} ({clock})"
+msgstr "{left}后重置（{clock}）"
+
+#: src/prefs.js
+msgid "Percentage"
+msgstr "百分比"
+
+#: src/prefs.js
+msgid "Small bar"
+msgstr "小进度条"
+
+#: src/prefs.js
+msgid "Percentage and bar"
+msgstr "百分比和进度条"
+
+#: src/prefs.js
+msgid "Language"
+msgstr "语言"
+
+#: src/prefs.js
+msgid "Automatic follows the system language, or English when there is no translation for it."
+msgstr "“自动”会跟随系统语言；如果没有该语言的翻译，则显示英文。"
+
+#: src/prefs.js
+msgid "Automatic"
+msgstr "自动"
+
+#: src/prefs.js
+msgid "Top bar"
+msgstr "顶栏"
+
+#: src/prefs.js
+msgid "Show"
+msgstr "显示"
+
+#: src/prefs.js
+msgid "What the 5-hour window looks like in the bar"
+msgstr "5 小时窗口在顶栏中的显示方式"
+
+#: src/prefs.js
+msgid "Show icon"
+msgstr "显示图标"
+
+#: src/prefs.js
+msgid "Also show the weekly percentage"
+msgstr "同时显示每周百分比"
+
+#: src/prefs.js
+msgid "Shown after the 5-hour one, e.g. \"12% · 40%\""
+msgstr "显示在 5 小时百分比之后，例如“12% · 40%”"
+
+#: src/prefs.js
+msgid "Position"
+msgstr "位置"
+
+#: src/prefs.js
+msgid "0 is the leftmost slot of the right-hand cluster, next to app indicators"
+msgstr "0 表示右侧区域最左边的位置，紧挨着应用指示器"
+
+#: src/prefs.js
+msgid "Colors"
+msgstr "颜色"
+
+#: src/prefs.js
+msgid "Percentages from which the indicator changes color"
+msgstr "指示器变色的百分比"
+
+#: src/prefs.js
+msgid "Amber from"
+msgstr "琥珀色阈值"
+
+#: src/prefs.js
+msgid "Red from"
+msgstr "红色阈值"
+
+#: src/prefs.js
+msgid "Data"
+msgstr "数据"
+
+#: src/prefs.js
+msgid "Refresh every (seconds)"
+msgstr "刷新间隔（秒）"
+
+#: src/prefs.js
+msgid "The usage API allows only a few calls per few minutes, shared with Claude Code"
+msgstr "用量 API 每隔几分钟只能调用几次，且这一额度与 Claude Code 共享"
+
+#: src/prefs.js
+msgid "Claude Code credentials file"
+msgstr "Claude Code 凭据文件"
+
+#: src/prefs.js
+msgid "Leave empty for ~/.claude/.credentials.json"
+msgstr "留空则使用 ~/.claude/.credentials.json"
+
+#: src/prefs.js
+msgid "The file Claude Code writes when you sign in. Only the access token is read; nothing is written."
+msgstr "Claude Code 登录时写入的文件。只读取其中的访问令牌，不会写入任何内容。"
+
+#. Short day names, before the clock time of a reset ("Wed 06:00").
+#: src/usage.js
+msgid "Mon"
+msgstr "周一"
+
+#: src/usage.js
+msgid "Tue"
+msgstr "周二"
+
+#: src/usage.js
+msgid "Wed"
+msgstr "周三"
+
+#: src/usage.js
+msgid "Thu"
+msgstr "周四"
+
+#: src/usage.js
+msgid "Fri"
+msgstr "周五"
+
+#: src/usage.js
+msgid "Sat"
+msgstr "周六"
+
+#: src/usage.js
+msgid "Sun"
+msgstr "周日"
+
+#: src/usage.js
+msgid "5-hour window"
+msgstr "5 小时窗口"
+
+#: src/usage.js
+msgid "Weekly, all models"
+msgstr "每周，所有模型"
+
+#: src/usage.js
+msgid "Weekly, apps"
+msgstr "每周，应用"
+
+#. A per-model weekly limit whose model the API does not name.
+#: src/usage.js
+msgid "Weekly, scoped"
+msgstr "每周，其他"
+
+#. {scope} is a model or product name from the API, e.g. "Fable".
+#: src/usage.js
+msgid "Weekly, {scope}"
+msgstr "每周，{scope}"
+
+#. Durations, shown in the top bar: keep them short. {m} is zero-padded after hours ("2h 05m").
+#: src/usage.js
+msgid "{m}m"
+msgstr "{m}分钟"
+
+#. Durations, shown in the top bar: keep them short. {m} is zero-padded after hours ("2h 05m").
+#: src/usage.js
+msgid "{h}h {m}m"
+msgstr "{h}小时{m}分"
+
+#. Durations, shown in the top bar: keep them short.
+#: src/usage.js
+msgid "{d}d {h}h"
+msgstr "{d}天{h}小时"

@@ -1,0 +1,256 @@
+# Japanese translation of AI Meter.
+# This file is distributed under the same license as AI Meter (MIT).
+#
+# Keep {placeholders}, `commands` and paths exactly as they are: make test checks it.
+msgid ""
+msgstr ""
+"Project-Id-Version: ai-meter\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/indicator.js
+msgid "Claude usage"
+msgstr "Claude の使用量"
+
+#: src/indicator.js
+msgid "Extra usage"
+msgstr "追加使用量"
+
+#: src/indicator.js
+msgid "Refresh"
+msgstr "更新"
+
+#: src/indicator.js
+msgid "Settings"
+msgstr "設定"
+
+#. Shown in the top bar instead of the percentage: keep it short.
+#: src/indicator.js
+msgid "no login"
+msgstr "未ログイン"
+
+#. Shown in the top bar instead of the percentage: keep it short.
+#: src/indicator.js
+msgid "expired"
+msgstr "期限切れ"
+
+#: src/indicator.js
+msgid "Updated just now"
+msgstr "たった今更新"
+
+#: src/indicator.js
+msgid "Updated {age} ago"
+msgstr "{age}前に更新"
+
+#: src/indicator.js
+msgid "Fetching…"
+msgstr "取得中…"
+
+#: src/indicator.js
+msgid "Not fetched yet"
+msgstr "未取得"
+
+#: src/indicator.js
+msgid "No Claude Code login found at {path}. Install Claude Code and run `claude` once to sign in."
+msgstr "{path} に Claude Code のログイン情報が見つかりません。Claude Code をインストールし、`claude` を一度実行してサインインしてください。"
+
+#: src/indicator.js
+msgid "The credentials file has no Claude login. Run `claude` in a terminal and sign in."
+msgstr "認証情報ファイルに Claude のログイン情報がありません。ターミナルで `claude` を実行してサインインしてください。"
+
+#: src/indicator.js
+msgid "Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up as soon as it does."
+msgstr "Claude Code のログインの有効期限が切れました。Claude Code を開いて（ターミナルで `claude` を実行）更新してください。更新されるとすぐにメーターに反映されます。"
+
+#: src/indicator.js
+msgid "The usage API allows only a few calls per few minutes per account, shared with Claude Code. Next try in {left}."
+msgstr "使用量 API はアカウントごとに数分間で数回しか呼び出せず、この枠は Claude Code と共有されています。{left}後に再試行します。"
+
+#. Ends "Next try in {left}." when the wait is under a minute.
+#: src/indicator.js
+msgid "a moment"
+msgstr "少し"
+
+#: src/indicator.js
+msgid "Network error: {message}"
+msgstr "ネットワークエラー: {message}"
+
+#: src/indicator.js
+msgid "Could not fetch usage: {message}"
+msgstr "使用量を取得できませんでした: {message}"
+
+#: src/meter.js
+msgid "Limit reached"
+msgstr "上限に達しました"
+
+#: src/meter.js
+msgid "Limit reached, resets in {left} ({clock})"
+msgstr "上限に達しました。{left}後にリセット（{clock}）"
+
+#: src/meter.js
+msgid "Resets in {left} ({clock})"
+msgstr "{left}後にリセット（{clock}）"
+
+#: src/prefs.js
+msgid "Percentage"
+msgstr "パーセント"
+
+#: src/prefs.js
+msgid "Small bar"
+msgstr "小さなバー"
+
+#: src/prefs.js
+msgid "Percentage and bar"
+msgstr "パーセントとバー"
+
+#: src/prefs.js
+msgid "Language"
+msgstr "言語"
+
+#: src/prefs.js
+msgid "Automatic follows the system language, or English when there is no translation for it."
+msgstr "「自動」ではシステムの言語を使い、その言語の翻訳がない場合は英語で表示します。"
+
+#: src/prefs.js
+msgid "Automatic"
+msgstr "自動"
+
+#: src/prefs.js
+msgid "Top bar"
+msgstr "トップバー"
+
+#: src/prefs.js
+msgid "Show"
+msgstr "表示"
+
+#: src/prefs.js
+msgid "What the 5-hour window looks like in the bar"
+msgstr "5時間枠をバーにどう表示するか"
+
+#: src/prefs.js
+msgid "Show icon"
+msgstr "アイコンを表示"
+
+#: src/prefs.js
+msgid "Also show the weekly percentage"
+msgstr "週間の割合も表示"
+
+#: src/prefs.js
+msgid "Shown after the 5-hour one, e.g. \"12% · 40%\""
+msgstr "5時間枠の割合の後ろに表示されます（例: 「12% · 40%」）"
+
+#: src/prefs.js
+msgid "Position"
+msgstr "位置"
+
+#: src/prefs.js
+msgid "0 is the leftmost slot of the right-hand cluster, next to app indicators"
+msgstr "0 は右側グループの一番左で、アプリのインジケーターのすぐ隣です"
+
+#: src/prefs.js
+msgid "Colors"
+msgstr "色"
+
+#: src/prefs.js
+msgid "Percentages from which the indicator changes color"
+msgstr "インジケーターの色が変わる割合"
+
+#: src/prefs.js
+msgid "Amber from"
+msgstr "黄色にする値"
+
+#: src/prefs.js
+msgid "Red from"
+msgstr "赤色にする値"
+
+#: src/prefs.js
+msgid "Data"
+msgstr "データ"
+
+#: src/prefs.js
+msgid "Refresh every (seconds)"
+msgstr "更新間隔（秒）"
+
+#: src/prefs.js
+msgid "The usage API allows only a few calls per few minutes, shared with Claude Code"
+msgstr "使用量 API は数分間で数回しか呼び出せず、この枠は Claude Code と共有されています"
+
+#: src/prefs.js
+msgid "Claude Code credentials file"
+msgstr "Claude Code の認証情報ファイル"
+
+#: src/prefs.js
+msgid "Leave empty for ~/.claude/.credentials.json"
+msgstr "空欄の場合は ~/.claude/.credentials.json を使います"
+
+#: src/prefs.js
+msgid "The file Claude Code writes when you sign in. Only the access token is read; nothing is written."
+msgstr "サインイン時に Claude Code が書き込むファイルです。読み取るのはアクセストークンだけで、何も書き込みません。"
+
+#. Short day names, before the clock time of a reset ("Wed 06:00").
+#: src/usage.js
+msgid "Mon"
+msgstr "月曜"
+
+#: src/usage.js
+msgid "Tue"
+msgstr "火曜"
+
+#: src/usage.js
+msgid "Wed"
+msgstr "水曜"
+
+#: src/usage.js
+msgid "Thu"
+msgstr "木曜"
+
+#: src/usage.js
+msgid "Fri"
+msgstr "金曜"
+
+#: src/usage.js
+msgid "Sat"
+msgstr "土曜"
+
+#: src/usage.js
+msgid "Sun"
+msgstr "日曜"
+
+#: src/usage.js
+msgid "5-hour window"
+msgstr "5時間枠"
+
+#: src/usage.js
+msgid "Weekly, all models"
+msgstr "週間（全モデル）"
+
+#: src/usage.js
+msgid "Weekly, apps"
+msgstr "週間（アプリ）"
+
+#. A per-model weekly limit whose model the API does not name.
+#: src/usage.js
+msgid "Weekly, scoped"
+msgstr "週間（その他）"
+
+#. {scope} is a model or product name from the API, e.g. "Fable".
+#: src/usage.js
+msgid "Weekly, {scope}"
+msgstr "週間（{scope}）"
+
+#. Durations, shown in the top bar: keep them short. {m} is zero-padded after hours ("2h 05m").
+#: src/usage.js
+msgid "{m}m"
+msgstr "{m}分"
+
+#. Durations, shown in the top bar: keep them short. {m} is zero-padded after hours ("2h 05m").
+#: src/usage.js
+msgid "{h}h {m}m"
+msgstr "{h}時間{m}分"
+
+#. Durations, shown in the top bar: keep them short.
+#: src/usage.js
+msgid "{d}d {h}h"
+msgstr "{d}日{h}時間"

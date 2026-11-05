@@ -7,12 +7,30 @@ import Gio from 'gi://Gio';
 
 Gio._promisify(Gio.File.prototype, 'load_contents_async');
 
-/** The languages with a translation, English being the source text. */
+/**
+ * The languages with a translation, English being the source text: the
+ * code of src/po/<code>.po and the language's name in that language.
+ */
 export const LANGUAGES = [
     ['en', 'English'],
+    ['ar', 'العربية'],
+    ['bn', 'বাংলা'],
+    ['es', 'Español'],
     ['fr', 'Français'],
+    ['hi', 'हिन्दी'],
+    ['id', 'Bahasa Indonesia'],
     ['it', 'Italiano'],
+    ['ja', '日本語'],
+    ['pt_BR', 'Português (Brasil)'],
+    ['ru', 'Русский'],
+    ['tr', 'Türkçe'],
+    ['ur', 'اردو'],
+    ['zh_CN', '简体中文'],
 ];
+
+// System languages served by the translation of another code: Portugal's
+// Portuguese by Brazil's, Singapore's Chinese (simplified) by China's.
+const FALLBACKS = {pt: 'pt_BR', zh_SG: 'zh_CN'};
 
 let catalog = new Map();
 
@@ -39,16 +57,21 @@ export function setCatalog(map) {
 /**
  * The language to show: `setting` when it has a translation, otherwise the
  * first of `systemNames` (GLib.get_language_names(), e.g. ['fr_FR.UTF-8',
- * 'fr_FR', 'fr', 'C']) that has one, otherwise English.
+ * 'fr_FR', 'fr', 'C']) that has one, by language and region ('pt_BR') then
+ * by language alone ('fr' for 'fr_CA'), otherwise English.
  */
 export function pickLanguage(setting, systemNames) {
     const codes = LANGUAGES.map(([code]) => code);
     if (codes.includes(setting))
         return setting;
     for (const name of systemNames) {
-        const base = name.split(/[_.@]/)[0];
-        if (codes.includes(base))
-            return base;
+        const locale = name.split(/[.@]/)[0];
+        for (const candidate of [locale, locale.split('_')[0]]) {
+            if (codes.includes(candidate))
+                return candidate;
+            if (Object.hasOwn(FALLBACKS, candidate))
+                return FALLBACKS[candidate];
+        }
     }
     return 'en';
 }

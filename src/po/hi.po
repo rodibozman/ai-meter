@@ -1,0 +1,256 @@
+# Hindi translation of AI Meter.
+# This file is distributed under the same license as AI Meter (MIT).
+#
+# Keep {placeholders}, `commands` and paths exactly as they are: make test checks it.
+msgid ""
+msgstr ""
+"Project-Id-Version: ai-meter\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/indicator.js
+msgid "Claude usage"
+msgstr "Claude का उपयोग"
+
+#: src/indicator.js
+msgid "Extra usage"
+msgstr "अतिरिक्त उपयोग"
+
+#: src/indicator.js
+msgid "Refresh"
+msgstr "रीफ़्रेश करें"
+
+#: src/indicator.js
+msgid "Settings"
+msgstr "सेटिंग्स"
+
+#. Shown in the top bar instead of the percentage: keep it short.
+#: src/indicator.js
+msgid "no login"
+msgstr "लॉगिन नहीं"
+
+#. Shown in the top bar instead of the percentage: keep it short.
+#: src/indicator.js
+msgid "expired"
+msgstr "एक्सपायर"
+
+#: src/indicator.js
+msgid "Updated just now"
+msgstr "अभी-अभी अपडेट हुआ"
+
+#: src/indicator.js
+msgid "Updated {age} ago"
+msgstr "{age} पहले अपडेट हुआ"
+
+#: src/indicator.js
+msgid "Fetching…"
+msgstr "जानकारी लाई जा रही है…"
+
+#: src/indicator.js
+msgid "Not fetched yet"
+msgstr "अभी तक नहीं लाई गई"
+
+#: src/indicator.js
+msgid "No Claude Code login found at {path}. Install Claude Code and run `claude` once to sign in."
+msgstr "{path} में Claude Code का कोई लॉगिन नहीं मिला। Claude Code इंस्टॉल करें और साइन इन करने के लिए एक बार `claude` चलाएँ।"
+
+#: src/indicator.js
+msgid "The credentials file has no Claude login. Run `claude` in a terminal and sign in."
+msgstr "क्रेडेंशियल फ़ाइल में Claude का कोई लॉगिन नहीं है। टर्मिनल में `claude` चलाएँ और साइन इन करें।"
+
+#: src/indicator.js
+msgid "Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up as soon as it does."
+msgstr "Claude Code लॉगिन की अवधि खत्म हो गई है। इसे रिन्यू करने के लिए Claude Code खोलें (टर्मिनल में `claude` चलाएँ); रिन्यू होते ही मीटर इसे अपने-आप पकड़ लेगा।"
+
+#: src/indicator.js
+msgid "The usage API allows only a few calls per few minutes per account, shared with Claude Code. Next try in {left}."
+msgstr "उपयोग API हर खाते के लिए कुछ मिनटों में बस कुछ ही कॉल करने देता है, और यह सीमा Claude Code के साथ साझा होती है। {left} में फिर से कोशिश की जाएगी।"
+
+#. Ends "Next try in {left}." when the wait is under a minute.
+#: src/indicator.js
+msgid "a moment"
+msgstr "थोड़ी देर"
+
+#: src/indicator.js
+msgid "Network error: {message}"
+msgstr "नेटवर्क त्रुटि: {message}"
+
+#: src/indicator.js
+msgid "Could not fetch usage: {message}"
+msgstr "उपयोग की जानकारी नहीं मिल सकी: {message}"
+
+#: src/meter.js
+msgid "Limit reached"
+msgstr "सीमा पूरी हो गई"
+
+#: src/meter.js
+msgid "Limit reached, resets in {left} ({clock})"
+msgstr "सीमा पूरी हो गई, {left} में रीसेट होगी ({clock})"
+
+#: src/meter.js
+msgid "Resets in {left} ({clock})"
+msgstr "{left} में रीसेट होगी ({clock})"
+
+#: src/prefs.js
+msgid "Percentage"
+msgstr "प्रतिशत"
+
+#: src/prefs.js
+msgid "Small bar"
+msgstr "छोटी बार"
+
+#: src/prefs.js
+msgid "Percentage and bar"
+msgstr "प्रतिशत और बार"
+
+#: src/prefs.js
+msgid "Language"
+msgstr "भाषा"
+
+#: src/prefs.js
+msgid "Automatic follows the system language, or English when there is no translation for it."
+msgstr "\"अपने-आप\" सिस्टम की भाषा अपनाता है; अगर उस भाषा का अनुवाद नहीं है, तो अंग्रेज़ी दिखती है।"
+
+#: src/prefs.js
+msgid "Automatic"
+msgstr "अपने-आप"
+
+#: src/prefs.js
+msgid "Top bar"
+msgstr "टॉप बार"
+
+#: src/prefs.js
+msgid "Show"
+msgstr "दिखाएँ"
+
+#: src/prefs.js
+msgid "What the 5-hour window looks like in the bar"
+msgstr "बार में 5 घंटे की विंडो कैसे दिखे"
+
+#: src/prefs.js
+msgid "Show icon"
+msgstr "आइकन दिखाएँ"
+
+#: src/prefs.js
+msgid "Also show the weekly percentage"
+msgstr "साप्ताहिक प्रतिशत भी दिखाएँ"
+
+#: src/prefs.js
+msgid "Shown after the 5-hour one, e.g. \"12% · 40%\""
+msgstr "5 घंटे वाले प्रतिशत के बाद दिखता है, जैसे \"12% · 40%\""
+
+#: src/prefs.js
+msgid "Position"
+msgstr "स्थान"
+
+#: src/prefs.js
+msgid "0 is the leftmost slot of the right-hand cluster, next to app indicators"
+msgstr "0 का मतलब है दाईं ओर के समूह में सबसे बाईं जगह, ऐप इंडिकेटर के ठीक बगल में"
+
+#: src/prefs.js
+msgid "Colors"
+msgstr "रंग"
+
+#: src/prefs.js
+msgid "Percentages from which the indicator changes color"
+msgstr "वे प्रतिशत जिन पर इंडिकेटर का रंग बदलता है"
+
+#: src/prefs.js
+msgid "Amber from"
+msgstr "एम्बर रंग की सीमा"
+
+#: src/prefs.js
+msgid "Red from"
+msgstr "लाल रंग की सीमा"
+
+#: src/prefs.js
+msgid "Data"
+msgstr "डेटा"
+
+#: src/prefs.js
+msgid "Refresh every (seconds)"
+msgstr "रीफ़्रेश अंतराल (सेकंड)"
+
+#: src/prefs.js
+msgid "The usage API allows only a few calls per few minutes, shared with Claude Code"
+msgstr "उपयोग API कुछ मिनटों में बस कुछ ही कॉल करने देता है, और यह सीमा Claude Code के साथ साझा होती है"
+
+#: src/prefs.js
+msgid "Claude Code credentials file"
+msgstr "Claude Code की क्रेडेंशियल फ़ाइल"
+
+#: src/prefs.js
+msgid "Leave empty for ~/.claude/.credentials.json"
+msgstr "~/.claude/.credentials.json इस्तेमाल करने के लिए खाली छोड़ दें"
+
+#: src/prefs.js
+msgid "The file Claude Code writes when you sign in. Only the access token is read; nothing is written."
+msgstr "वह फ़ाइल जिसे Claude Code साइन इन करते समय लिखता है। सिर्फ़ ऐक्सेस टोकन पढ़ा जाता है; कुछ भी लिखा नहीं जाता।"
+
+#. Short day names, before the clock time of a reset ("Wed 06:00").
+#: src/usage.js
+msgid "Mon"
+msgstr "सोम"
+
+#: src/usage.js
+msgid "Tue"
+msgstr "मंगल"
+
+#: src/usage.js
+msgid "Wed"
+msgstr "बुध"
+
+#: src/usage.js
+msgid "Thu"
+msgstr "गुरु"
+
+#: src/usage.js
+msgid "Fri"
+msgstr "शुक्र"
+
+#: src/usage.js
+msgid "Sat"
+msgstr "शनि"
+
+#: src/usage.js
+msgid "Sun"
+msgstr "रवि"
+
+#: src/usage.js
+msgid "5-hour window"
+msgstr "5 घंटे की विंडो"
+
+#: src/usage.js
+msgid "Weekly, all models"
+msgstr "साप्ताहिक, सभी मॉडल"
+
+#: src/usage.js
+msgid "Weekly, apps"
+msgstr "साप्ताहिक, ऐप्स"
+
+#. A per-model weekly limit whose model the API does not name.
+#: src/usage.js
+msgid "Weekly, scoped"
+msgstr "साप्ताहिक, अन्य"
+
+#. {scope} is a model or product name from the API, e.g. "Fable".
+#: src/usage.js
+msgid "Weekly, {scope}"
+msgstr "साप्ताहिक, {scope}"
+
+#. Durations, shown in the top bar: keep them short. {m} is zero-padded after hours ("2h 05m").
+#: src/usage.js
+msgid "{m}m"
+msgstr "{m} मिनट"
+
+#. Durations, shown in the top bar: keep them short. {m} is zero-padded after hours ("2h 05m").
+#: src/usage.js
+msgid "{h}h {m}m"
+msgstr "{h} घंटे {m} मिनट"
+
+#. Durations, shown in the top bar: keep them short.
+#: src/usage.js
+msgid "{d}d {h}h"
+msgstr "{d} दिन {h} घंटे"

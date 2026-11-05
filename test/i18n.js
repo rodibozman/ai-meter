@@ -47,7 +47,7 @@ main(async () => {
 
     // pickLanguage: the setting, else the system's first language with a
     // translation, else English.
-    assertEqual(LANGUAGES.map(([code]) => code), ['en', 'fr', 'it'], 'English, French and Italian');
+    assertEqual(LANGUAGES.map(([code]) => code), ['en', 'ar', 'bn', 'es', 'fr', 'hi', 'id', 'it', 'ja', 'pt_BR', 'ru', 'tr', 'ur', 'zh_CN'], 'English and 13 translations');
     assert(pickLanguage('it', ['fr_FR.UTF-8', 'fr_FR', 'fr', 'C']) === 'it', 'the setting wins');
     assert(pickLanguage('', ['fr_FR.UTF-8', 'fr_FR', 'fr', 'C']) === 'fr', 'empty setting follows the system');
     assert(pickLanguage('', ['it_CH.UTF-8@euro']) === 'it', 'region, encoding and modifier ignored');
@@ -56,6 +56,14 @@ main(async () => {
     assert(pickLanguage('', ['C']) === 'en', 'C locale: English');
     assert(pickLanguage('de', ['fr']) === 'fr', 'a setting without a translation follows the system');
     assert(pickLanguage('', ['en_GB.UTF-8', 'fr']) === 'en', 'English listed first wins over French');
+    assert(pickLanguage('pt_BR', ['fr']) === 'pt_BR' && pickLanguage('pt', ['fr']) === 'fr', 'a setting must be a code exactly');
+    assert(pickLanguage('', ['pt_BR.UTF-8', 'pt_BR', 'pt', 'C']) === 'pt_BR', 'Brazilian Portuguese');
+    assert(pickLanguage('', ['pt_PT.UTF-8', 'pt_PT', 'pt', 'C']) === 'pt_BR', 'Portugal falls back to Brazilian Portuguese');
+    assert(pickLanguage('', ['zh_CN.UTF-8', 'zh_CN', 'zh', 'C']) === 'zh_CN', 'Simplified Chinese');
+    assert(pickLanguage('', ['zh_SG.UTF-8']) === 'zh_CN', 'Singapore uses Simplified Chinese');
+    assert(pickLanguage('', ['zh_TW.UTF-8', 'zh_TW', 'zh', 'C']) === 'en', 'Traditional Chinese is not Simplified: English');
+    assert(pickLanguage('', ['es_MX.UTF-8', 'es_MX', 'es', 'C']) === 'es', 'any Spanish region');
+    assert(pickLanguage('', ['ar_EG.UTF-8']) === 'ar' && pickLanguage('', ['ur_PK']) === 'ur', 'Arabic and Urdu');
 
     // parsePo
     const po = parsePo([
