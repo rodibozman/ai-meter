@@ -37,6 +37,10 @@ main(async () => {
     });
     assertEqual(scopes.scoped.map(s => s.name), ['Weekly, cowork', 'Weekly, scoped', 'Weekly, scoped'], 'scope name fallbacks');
 
+    // No 5-hour window (seen on Max 20x): the weekly limits still parse.
+    const noSession = parseUsage({...sample, five_hour: null, limits: sample.limits.filter(l => l.kind !== 'session')});
+    assert(noSession.session === null && noSession.weekly.percent === 6 && noSession.scoped.length === 1, 'weekly limits without a 5-hour window');
+
     // Older shape: no `limits` array, per-model fields.
     const old = {
         five_hour: {utilization: 97.6, resets_at: '2026-10-29T13:00:00+00:00', locked_reason: 'limit'},

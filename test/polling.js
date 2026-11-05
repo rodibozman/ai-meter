@@ -1,7 +1,7 @@
 // Offline tests of src/polling.js, the decisions behind the refresh loop:
 // `gjs -m test/polling.js` from the repo root.
 import {
-    severity, isExhausted, fetchWait, retryAfterError, isCredentialsError, newPollState, pollTiming, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
+    severity, isExhausted, panelLimit, fetchWait, retryAfterError, isCredentialsError, newPollState, pollTiming, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
     RATE_LIMIT_MIN_SECONDS,
 } from '../src/polling.js';
 import {assert, assertEqual, main} from './harness.js';
@@ -10,6 +10,13 @@ main(() => {
     assert(isExhausted({percent: 100, locked: false}), '100 % is exhausted');
     assert(isExhausted({percent: 40, locked: true}), 'a locked limit is exhausted');
     assert(!isExhausted({percent: 99, locked: false}), '99 % is not exhausted');
+
+    // The top bar shows the 5-hour window, else the weekly limit.
+    const session = {percent: 12}, weekly = {percent: 40};
+    assert(panelLimit({session, weekly, scoped: []}) === session, 'the 5-hour window when there is one');
+    assert(panelLimit({session: null, weekly, scoped: []}) === weekly, 'the weekly limit without a 5-hour window');
+    assert(panelLimit({session: null, weekly: null, scoped: []}) === null, 'nothing without either');
+    assert(panelLimit(null) === null, 'nothing before the first fetch');
 
     // Colour thresholds.
     assert(severity(null, 70, 90) === 'ok' && severity(undefined, 70, 90) === 'ok', 'unknown percent is ok');

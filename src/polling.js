@@ -52,6 +52,14 @@ export function isExhausted(limit) {
     return limit.locked || limit.percent >= 100;
 }
 
+/**
+ * The limit the top bar shows: the 5-hour window, or the weekly limit when
+ * the API sends no 5-hour window (seen on Max 20x); null without data.
+ */
+export function panelLimit(usage) {
+    return usage?.session ?? usage?.weekly ?? null;
+}
+
 /** 'ok', 'warn' or 'crit' for a percentage and the two thresholds. */
 export function severity(percent, warn, crit) {
     if (percent === null || percent === undefined)
