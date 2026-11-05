@@ -107,7 +107,7 @@ class AiMeterIndicator extends PanelMenu.Button {
         const fbox = new St.BoxLayout({x_expand: true, style_class: 'ai-meter-footer'});
         this._updatedLabel = new St.Label({style_class: 'ai-meter-footer-text', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
         const refresh = new St.Button({label: 'Refresh', style_class: 'button', can_focus: true});
-        refresh.connect('clicked', () => this._schedule(0));
+        refresh.connect('clicked', () => this._onRefreshClicked());
         const prefs = new St.Button({label: 'Settings', style_class: 'button', can_focus: true});
         prefs.connect('clicked', () => {
             this.menu.close();
@@ -118,6 +118,15 @@ class AiMeterIndicator extends PanelMenu.Button {
         fbox.add_child(prefs);
         footer.add_child(fbox);
         this.menu.addMenuItem(footer);
+    }
+
+    // A click skips the backoff after an error, which would otherwise turn it
+    // into a silent retry minutes later. Not after a 429: the API asked to
+    // wait. The minimum gap still applies.
+    _onRefreshClicked() {
+        if (this._state.error && this._state.error.kind !== 'rate-limited')
+            this._state.nextTry = 0;
+        this._schedule(0);
     }
 
     _credentialsPath() {
