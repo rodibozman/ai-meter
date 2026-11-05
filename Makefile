@@ -1,7 +1,7 @@
 UUID := ai-meter@rodibozman.github.io
 DIST := dist
 ZIP  := $(DIST)/$(UUID).shell-extension.zip
-TESTS := test/parse.js test/credentials.js test/http.js test/polling.js
+TESTS := test/parse.js test/credentials.js test/http.js test/polling.js test/i18n.js
 
 .PHONY: install uninstall zip check lint test schema clean
 
@@ -13,10 +13,11 @@ uninstall:
 	rm -rf "$${XDG_DATA_HOME:-$$HOME/.local/share}/gnome-shell/extensions/$(UUID)"
 
 # Zip in the layout extensions.gnome.org and `gnome-extensions install` expect.
-# No gschemas.compiled: both compile the schema at install time.
+# No gschemas.compiled: both compile the schema at install time. No .pot:
+# only translators need the template.
 zip: schema
 	rm -rf $(DIST) && mkdir -p $(DIST)
-	cd src && zip -qr ../$(ZIP) . -x '*.orig' '*~' 'schemas/gschemas.compiled'
+	cd src && zip -qr ../$(ZIP) . -x '*.orig' '*~' 'schemas/gschemas.compiled' 'po/*.pot'
 	@echo "wrote $(ZIP)"
 
 check: lint schema test

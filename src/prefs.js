@@ -1,61 +1,82 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+import {_, N_, LANGUAGES, pickLanguage, loadCatalogSync, setCatalog} from './i18n.js';
+
 const DISPLAY_MODES = [
-    ['percent', 'Percentage'],
-    ['bar', 'Small bar'],
-    ['both', 'Percentage and bar'],
+    ['percent', N_('Percentage')],
+    ['bar', N_('Small bar')],
+    ['both', N_('Percentage and bar')],
 ];
 
 export default class AiMeterPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
+        const lang = pickLanguage(settings.get_string('language'), GLib.get_language_names());
+        try {
+            setCatalog(loadCatalogSync(this.path, lang));
+        } catch (e) {
+            console.warn(`[ai-meter] cannot read the ${lang} translation, using English: ${e.message}`);
+        }
+
         const page = new Adw.PreferencesPage({title: 'AI Meter', icon_name: 'preferences-system-symbolic'});
         window.add(page);
 
-        const panel = new Adw.PreferencesGroup({title: 'Top bar'});
+        const general = new Adw.PreferencesGroup();
+        page.add(general);
+        // Language names stay in their own language, so anyone can find theirs.
+        general.add(this._combo(settings, 'language', _('Language'),
+            _('Automatic follows the system language, or English when there is no translation for it. Reopen this window to see it in the new language.'),
+            [['', _('Automatic')], ...LANGUAGES]));
+
+        const panel = new Adw.PreferencesGroup({title: _('Top bar')});
         page.add(panel);
+        panel.add(this._combo(settings, 'panel-display', _('Show'), _('What the 5-hour window looks like in the bar'),
+            DISPLAY_MODES.map(([key, label]) => [key, _(label)])));
+        panel.add(this._switch(settings, 'show-icon', _('Show icon')));
+        panel.add(this._switch(settings, 'show-weekly', _('Also show the weekly percentage'),
+            _('Shown after the 5-hour one, e.g. "12% · 40%"')));
+        panel.add(this._spin(settings, 'panel-position', _('Position'), 0, 20, 1,
+            _('0 is the leftmost slot of the right-hand cluster, next to app indicators')));
 
-        const display = new Adw.ComboRow({
-            title: 'Show',
-            subtitle: 'What the 5-hour window looks like in the bar',
-            model: Gtk.StringList.new(DISPLAY_MODES.map(([, label]) => label)),
-        });
-        const current = settings.get_string('panel-display');
-        display.selected = Math.max(0, DISPLAY_MODES.findIndex(([key]) => key === current));
-        display.connect('notify::selected', row => settings.set_string('panel-display', DISPLAY_MODES[row.selected][0]));
-        panel.add(display);
-
-        panel.add(this._switch(settings, 'show-icon', 'Show icon'));
-        panel.add(this._switch(settings, 'show-weekly', 'Also show the weekly percentage',
-            'Shown after the 5-hour one, e.g. "12% · 40%"'));
-        panel.add(this._spin(settings, 'panel-position', 'Position', 0, 20, 1,
-            '0 is the leftmost slot of the right-hand cluster, next to app indicators'));
-
-        const colors = new Adw.PreferencesGroup({title: 'Colors', description: 'Percentages from which the indicator changes color'});
+        const colors = new Adw.PreferencesGroup({title: _('Colors'), description: _('Percentages from which the indicator changes color')});
         page.add(colors);
-        colors.add(this._spin(settings, 'warn-threshold', 'Amber from', 1, 100, 5));
-        colors.add(this._spin(settings, 'crit-threshold', 'Red from', 1, 100, 5));
+        colors.add(this._spin(settings, 'warn-threshold', _('Amber from'), 1, 100, 5));
+        colors.add(this._spin(settings, 'crit-threshold', _('Red from'), 1, 100, 5));
 
-        const data = new Adw.PreferencesGroup({title: 'Data'});
+        const data = new Adw.PreferencesGroup({title: _('Data')});
         page.add(data);
-        data.add(this._spin(settings, 'refresh-interval', 'Refresh every (seconds)', 150, 3600, 30,
-            'The usage API allows only a few calls per few minutes, shared with Claude Code'));
+        data.add(this._spin(settings, 'refresh-interval', _('Refresh every (seconds)'), 150, 3600, 30,
+            _('The usage API allows only a few calls per few minutes, shared with Claude Code')));
         const path = new Adw.EntryRow({
-            title: 'Claude Code credentials file',
+            title: _('Claude Code credentials file'),
             text: settings.get_string('credentials-path'),
             show_apply_button: true,
         });
         path.connect('apply', row => settings.set_string('credentials-path', row.text));
         data.add(path);
         const hint = new Adw.ActionRow({
-            title: 'Leave empty for ~/.claude/.credentials.json',
-            subtitle: 'The file Claude Code writes when you sign in. Only the access token is read; nothing is written.',
+            title: _('Leave empty for ~/.claude/.credentials.json'),
+            subtitle: _('The file Claude Code writes when you sign in. Only the access token is read; nothing is written.'),
         });
         data.add(hint);
+    }
+
+    // A drop-down for a string key, `choices` being [value, label] pairs.
+    _combo(settings, key, title, subtitle, choices) {
+        const row = new Adw.ComboRow({
+            title,
+            subtitle,
+            model: Gtk.StringList.new(choices.map(([, label]) => label)),
+        });
+        const current = settings.get_string(key);
+        row.selected = Math.max(0, choices.findIndex(([value]) => value === current));
+        row.connect('notify::selected', r => settings.set_string(key, choices[r.selected][0]));
+        return row;
     }
 
     _switch(settings, key, title, subtitle = null) {

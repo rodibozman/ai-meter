@@ -103,9 +103,11 @@ main(async () => {
     assert(formatResetClock(at(0, 13).to_unix() * 1000 + 97, nowMs) === '13:00', 'reset just after the hour rounds down');
     assert(formatResetClock(at(0, 13).to_unix() * 1000 - 29000, nowMs) === '13:00', 'reset 29 s before the hour rounds up');
     assert(formatResetClock(at(0, 13).to_unix() * 1000 - 31000, nowMs) === '12:59', 'reset 31 s before the hour stays on the minute before');
+    // English day names whatever the system locale, see test/i18n.js.
+    const dayName = dt => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dt.get_day_of_week() - 1];
     const tomorrow = at(1, 6);
-    assert(formatResetClock(tomorrow.to_unix() * 1000, nowMs) === `${tomorrow.format('%a')} 06:00`, 'reset tomorrow shows the day name');
+    assert(formatResetClock(tomorrow.to_unix() * 1000, nowMs) === `${dayName(tomorrow)} 06:00`, 'reset tomorrow shows the day name');
     const lastYear = at(0, 13).add_years(-1);
-    assert(formatResetClock(lastYear.to_unix() * 1000, nowMs) === `${lastYear.format('%a')} 13:00`, 'same day-of-year in another year is not today');
+    assert(formatResetClock(lastYear.to_unix() * 1000, nowMs) === `${dayName(lastYear)} 13:00`, 'same day-of-year in another year is not today');
     assert(formatResetClock(null) === null && formatResetClock(undefined) === null, 'unknown reset clock');
 });

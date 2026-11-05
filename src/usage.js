@@ -5,6 +5,8 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Soup from 'gi://Soup';
 
+import {_, N_, fmt} from './i18n.js';
+
 export const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 export const USER_AGENT = 'ai-meter/0.1.6 (+https://github.com/rodibozman/ai-meter)';
 
@@ -119,7 +121,12 @@ function clampPercent(v) {
     return Math.min(100, Math.max(0, Math.round(Number(v))));
 }
 
-function fromPeriod(p, name) {
+// GLib's day of the week: 1 is Monday.
+const DAYS = [N_('Mon'), N_('Tue'), N_('Wed'), N_('Thu'), N_('Fri'), N_('Sat'), N_('Sun')];
+
+// `name` is the English one, shown through limitName(); `scope` the model or
+// surface of a per-model weekly limit, null otherwise.
+function fromPeriod(p, name, scope = null) {
     if (!p || typeof p !== 'object')
         return null;
     const percent = clampPercent(p.percent ?? p.utilization);
@@ -130,6 +137,7 @@ function fromPeriod(p, name) {
         percent,
         resetsAt: isoToMs(p.resets_at),
         locked: typeof p.locked_reason === 'string' && p.locked_reason !== '',
+        scope,
     };
 }
 
@@ -141,11 +149,12 @@ function money(obj) {
 }
 
 /**
- * Turns the raw usage JSON into a stable shape:
+ * Turns the raw usage JSON into a stable shape, where a limit is
+ * {name, percent, resetsAt, locked, scope} (see fromPeriod):
  * {
- *   session: {name, percent, resetsAt, locked} | null,   // 5-hour window
- *   weekly:  {name, percent, resetsAt, locked} | null,   // 7-day, all models
- *   scoped:  [{name, percent, resetsAt, locked}],        // 7-day per model / surface
+ *   session: limit | null,                               // 5-hour window
+ *   weekly:  limit | null,                               // 7-day, all models
+ *   scoped:  [limit],                                    // 7-day per model / surface
  *   extra:   {enabled, used, limit, currency, percent} | null,
  * }
  *
@@ -158,21 +167,21 @@ export function parseUsage(data) {
     const limits = Array.isArray(data.limits) ? data.limits : [];
     const byKind = kind => limits.find(l => l?.kind === kind);
 
-    const session = fromPeriod(byKind('session'), '5-hour window') ??
-        fromPeriod(data.five_hour, '5-hour window');
-    const weekly = fromPeriod(byKind('weekly_all'), 'Weekly, all models') ??
-        fromPeriod(data.seven_day, 'Weekly, all models');
+    const session = fromPeriod(byKind('session'), N_('5-hour window')) ??
+        fromPeriod(data.five_hour, N_('5-hour window'));
+    const weekly = fromPeriod(byKind('weekly_all'), N_('Weekly, all models')) ??
+        fromPeriod(data.seven_day, N_('Weekly, all models'));
 
     let scoped = limits
         .filter(l => l?.kind === 'weekly_scoped')
-        .map(l => fromPeriod(l, scopeName(l.scope)))
+        .map(l => scopedPeriod(l, scopeLabel(l.scope)))
         .filter(Boolean);
     if (scoped.length === 0) {
         scoped = [
-            fromPeriod(data.seven_day_opus, 'Weekly, Opus'),
-            fromPeriod(data.seven_day_sonnet, 'Weekly, Sonnet'),
-            fromPeriod(data.seven_day_cowork, 'Weekly, Cowork'),
-            fromPeriod(data.seven_day_oauth_apps, 'Weekly, apps'),
+            scopedPeriod(data.seven_day_opus, 'Opus'),
+            scopedPeriod(data.seven_day_sonnet, 'Sonnet'),
+            scopedPeriod(data.seven_day_cowork, 'Cowork'),
+            fromPeriod(data.seven_day_oauth_apps, N_('Weekly, apps')),
         ].filter(Boolean);
     }
 
@@ -205,14 +214,25 @@ export function parseUsage(data) {
     return {session, weekly, scoped, extra};
 }
 
-function scopeName(scope) {
+function scopeLabel(scope) {
     const model = scope?.model?.display_name;
     const surface = scope?.surface;
     if (typeof model === 'string' && model !== '')
-        return `Weekly, ${model}`;
+        return model;
     if (typeof surface === 'string' && surface !== '')
-        return `Weekly, ${surface}`;
-    return 'Weekly, scoped';
+        return surface;
+    return null;
+}
+
+function scopedPeriod(p, label) {
+    return label === null
+        ? fromPeriod(p, N_('Weekly, scoped'))
+        : fromPeriod(p, `Weekly, ${label}`, label);
+}
+
+/** The name of a limit in the current language. */
+export function limitName(limit) {
+    return limit.scope === null ? _(limit.name) : fmt(_('Weekly, {scope}'), {scope: limit.scope});
 }
 
 /**
@@ -277,16 +297,17 @@ export function formatDuration(ms, roundUp = true) {
     if (minutes === 0)
         return null;
     if (minutes < 60)
-        return `${minutes}m`;
+        return fmt(_('{m}m'), {m: minutes});
     const hours = Math.floor(minutes / 60);
     if (hours < 24)
-        return `${hours}h ${String(minutes % 60).padStart(2, '0')}m`;
+        return fmt(_('{h}h {m}m'), {h: hours, m: String(minutes % 60).padStart(2, '0')});
     const days = Math.floor(hours / 24);
-    return `${days}d ${hours % 24}h`;
+    return fmt(_('{d}d {h}h'), {d: days, h: hours % 24});
 }
 
 /**
- * Local clock time of a reset: "13:00" today, "Wed 06:00" otherwise.
+ * Local clock time of a reset: "13:00" today, "Wed 06:00" otherwise, the
+ * day in the extension's language.
  * Rounded to the nearest minute: the API's `resets_at` lands a fraction of
  * a second either side of the hour, and 12:59:59.9 must read 13:00.
  */
@@ -296,5 +317,6 @@ export function formatResetClock(resetsAtMs, nowMs = Date.now()) {
     const dt = GLib.DateTime.new_from_unix_local(Math.round(resetsAtMs / 60000) * 60);
     const now = GLib.DateTime.new_from_unix_local(Math.floor(nowMs / 1000));
     const sameDay = dt.get_year() === now.get_year() && dt.get_day_of_year() === now.get_day_of_year();
-    return dt.format(sameDay ? '%H:%M' : '%a %H:%M');
+    const time = dt.format('%H:%M');
+    return sameDay ? time : `${_(DAYS[dt.get_day_of_week() - 1])} ${time}`;
 }
