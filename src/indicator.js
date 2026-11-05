@@ -13,7 +13,7 @@ import {
     fetchUsage, CredentialsWatcher, defaultCredentialsPath, formatDuration, USER_AGENT,
 } from './usage.js';
 import {
-    severity, isExhausted, fetchWait, retryAfterError, isCredentialsError, initialDelay,
+    severity, isExhausted, panelLimit, fetchWait, retryAfterError, isCredentialsError, initialDelay,
 } from './polling.js';
 import {Bar, MeterItem, setSeverityClass} from './meter.js';
 
@@ -225,8 +225,8 @@ class AiMeterIndicator extends PanelMenu.Button {
 
         this._icon.visible = this._settings.get_boolean('show-icon');
 
-        if (usage?.session) {
-            const s = usage.session;
+        const s = panelLimit(usage);
+        if (s) {
             const sev = severity(s.percent, warn, crit);
             const exhausted = isExhausted(s);
             let text;
@@ -236,7 +236,7 @@ class AiMeterIndicator extends PanelMenu.Button {
             } else {
                 text = `${s.percent}%`;
             }
-            if (this._settings.get_boolean('show-weekly') && usage.weekly)
+            if (this._settings.get_boolean('show-weekly') && usage.weekly && s !== usage.weekly)
                 text += ` · ${usage.weekly.percent}%`;
             this._label.text = text;
             this._label.visible = display !== 'bar' || exhausted;
