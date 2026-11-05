@@ -9,13 +9,14 @@ A GNOME Shell extension (GJS, ES modules) that shows Claude Pro/Max usage in the
 Layout:
 
 - `src/usage.js`: fetch and parse. No GNOME Shell import, so it runs under plain `gjs`.
-- `src/extension.js`: the entry point, `enable()` and `disable()` only.
+- `src/extension.js`: the entry point, `enable()` and `disable()`, and the reload of the texts when the language setting changes.
 - `src/indicator.js`: the top-bar button, the dropdown, the polling loop.
 - `src/meter.js`: the cairo bar and the meter row of the dropdown.
 - `src/polling.js`: the decisions of that loop (minimum gap, backoff, Retry-After, colour thresholds). No Shell import either.
 - `src/prefs.js` and `src/schemas/`: the settings window and its GSettings schema.
+- `src/i18n.js` and `src/po/`: the translations, one gettext `.po` file per language, and `ai-meter.pot`, the template. No Shell import either.
 - `install.sh`, `Makefile`, `.github/workflows/ci.yml`: install, checks, release.
-- `test/`: `parse.js`, `credentials.js`, `http.js` (local Soup server) and `polling.js` run offline through `make test`; `fetch.js` calls the real endpoint by hand. `harness.js` is the shared assert/main.
+- `test/`: `parse.js`, `credentials.js`, `http.js` (local Soup server), `polling.js` and `i18n.js` run offline through `make test`; `fetch.js` calls the real endpoint by hand. `harness.js` is the shared assert/main.
 
 ## Commit messages
 
@@ -62,6 +63,7 @@ No `Co-Authored-By` or tool trailers.
 - The usage endpoint rate-limits per account and Claude Code polls it too. Never fetch twice within 30 seconds, always honour `Retry-After`, keep showing the last good values on error.
 - Never write to the credentials file, never log the token, never add a network call to another host.
 - User-visible text is plain English, sentence case, no jargon from the API (`weekly_scoped` is "Weekly, Fable" to the user).
+- Every user-visible string is a literal inside `_()` (or `N_()` where it is defined and `_()` where it is shown), with `fmt()` and `{name}` placeholders instead of template literals. A new or changed string goes into `src/po/ai-meter.pot` and every `.po` in the same commit; `make test` fails until it does.
 - No runtime dependencies. `node_modules` is for the linter only; the extension ships as plain files.
 
 ## Settings

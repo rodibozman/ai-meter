@@ -42,6 +42,7 @@ Click the indicator, then **Settings** (or use the Extensions app):
 
 | Setting | Default | What it does |
 | --- | --- | --- |
+| Language | Automatic | English, French or Italian. Automatic follows the system language, or English when there is no translation for it |
 | Show | Percentage | Percentage, a small bar, or both, in the top bar |
 | Show icon | on | The gauge icon before the number |
 | Also show the weekly percentage | off | `12% · 40%` instead of `12%` |
@@ -58,6 +59,16 @@ The endpoint allows only a few calls per few minutes per account, and Claude Cod
 
 When the token expires, the bar shows `expired`: open Claude Code (run `claude` in a terminal) and it renews the file; the meter fetches again as soon as the file is rewritten (at most once a minute). If the file is missing, the bar shows `no login`.
 
+## Translations
+
+The texts are in English, French and Italian, one gettext file per language in `src/po/`. To add a language:
+
+1. Copy `src/po/ai-meter.pot` to `src/po/<code>.po` (e.g. `de.po`) and fill in each `msgstr`, with any `.po` editor (Poedit, GNOME Translation Editor) or by hand.
+2. Add `['<code>', '<name of the language in that language>']` to `LANGUAGES` in `src/i18n.js`.
+3. Run `make test`: it checks that every text is translated and that each translation keeps its `{placeholders}`, `commands` and paths, and adds no link.
+
+The extension reads these files itself rather than through GNOME's gettext, so that the Language setting can differ from the system language.
+
 ## Troubleshooting
 
 - Logs: `journalctl -f -o cat /usr/bin/gnome-shell | grep ai-meter`
@@ -72,7 +83,7 @@ make zip     # dist/ai-meter@rodibozman.github.io.shell-extension.zip
 make uninstall
 ```
 
-Sources live in `src/`. `usage.js` (fetch and parse) and `polling.js` (when to fetch, backoff) have no Shell dependency, so `make test` runs them offline under plain `gjs`: `test/parse.js` (parsing and formatting), `test/credentials.js` (the credentials file), `test/http.js` (every HTTP status, against a local server) and `test/polling.js` (refresh timing). `make lint` also runs shellcheck on `install.sh` when it is installed.
+Sources live in `src/`. `usage.js` (fetch and parse) and `polling.js` (when to fetch, backoff) have no Shell dependency, so `make test` runs them offline under plain `gjs`: `test/parse.js` (parsing and formatting), `test/credentials.js` (the credentials file), `test/http.js` (every HTTP status, against a local server) and `test/polling.js` (refresh timing) and `test/i18n.js` (language choice and the translation files). `make lint` also runs shellcheck on `install.sh` when it is installed.
 
 ## License
 

@@ -16,6 +16,7 @@ import {
     severity, isExhausted, panelLimit, fetchWait, retryAfterError, isCredentialsError, initialDelay,
 } from './polling.js';
 import {Bar, MeterItem, setSeverityClass} from './meter.js';
+import {_, fmt} from './i18n.js';
 
 const MENU_TICK_SECONDS = 30;
 // Delay between a write of the credentials file and the fetch it triggers,
@@ -82,7 +83,7 @@ class AiMeterIndicator extends PanelMenu.Button {
     _buildMenu() {
         const header = staticItem();
         const hbox = new St.BoxLayout({x_expand: true});
-        hbox.add_child(new St.Label({text: 'Claude usage', style_class: 'ai-meter-menu-header', x_expand: true}));
+        hbox.add_child(new St.Label({text: _('Claude usage'), style_class: 'ai-meter-menu-header', x_expand: true}));
         this._planLabel = new St.Label({style_class: 'ai-meter-menu-plan', y_align: Clutter.ActorAlign.CENTER});
         hbox.add_child(this._planLabel);
         header.add_child(hbox);
@@ -99,7 +100,7 @@ class AiMeterIndicator extends PanelMenu.Button {
 
         this._extraItem = staticItem();
         const ebox = new St.BoxLayout({x_expand: true});
-        ebox.add_child(new St.Label({text: 'Extra usage', style_class: 'ai-meter-meter-name', x_expand: true}));
+        ebox.add_child(new St.Label({text: _('Extra usage'), style_class: 'ai-meter-meter-name', x_expand: true}));
         this._extraLabel = new St.Label({style_class: 'ai-meter-meter-pct'});
         ebox.add_child(this._extraLabel);
         this._extraItem.add_child(ebox);
@@ -110,9 +111,9 @@ class AiMeterIndicator extends PanelMenu.Button {
         const footer = staticItem();
         const fbox = new St.BoxLayout({x_expand: true, style_class: 'ai-meter-footer'});
         this._updatedLabel = new St.Label({style_class: 'ai-meter-footer-text', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
-        const refresh = new St.Button({label: 'Refresh', style_class: 'button', can_focus: true});
+        const refresh = new St.Button({label: _('Refresh'), style_class: 'button', can_focus: true});
         refresh.connect('clicked', () => this._onRefreshClicked());
-        const prefs = new St.Button({label: 'Settings', style_class: 'button', can_focus: true});
+        const prefs = new St.Button({label: _('Settings'), style_class: 'button', can_focus: true});
         prefs.connect('clicked', () => {
             this.menu.close();
             this._extension.openPreferences();
@@ -274,9 +275,9 @@ class AiMeterIndicator extends PanelMenu.Button {
             if (!error)
                 this._label.text = '…';
             else if (error.kind === 'no-credentials' || error.kind === 'bad-credentials')
-                this._label.text = 'no login';
+                this._label.text = _('no login');
             else if (error.kind === 'expired')
-                this._label.text = 'expired';
+                this._label.text = _('expired');
             else
                 this._label.text = '–';
         }
@@ -304,28 +305,28 @@ class AiMeterIndicator extends PanelMenu.Button {
 
         if (fetchedAt) {
             const age = formatDuration(now - fetchedAt, false);
-            this._updatedLabel.text = age === null ? 'Updated just now' : `Updated ${age} ago`;
+            this._updatedLabel.text = age === null ? _('Updated just now') : fmt(_('Updated {age} ago'), {age});
         } else {
-            this._updatedLabel.text = this._refreshing ? 'Fetching…' : 'Not fetched yet';
+            this._updatedLabel.text = this._refreshing ? _('Fetching…') : _('Not fetched yet');
         }
     }
 
     _explain(error) {
         switch (error.kind) {
         case 'no-credentials':
-            return `No Claude Code login found at ${this._credentialsPath()}. Install Claude Code and run \`claude\` once to sign in.`;
+            return fmt(_('No Claude Code login found at {path}. Install Claude Code and run `claude` once to sign in.'), {path: this._credentialsPath()});
         case 'bad-credentials':
-            return 'The credentials file has no Claude login. Run `claude` in a terminal and sign in.';
+            return _('The credentials file has no Claude login. Run `claude` in a terminal and sign in.');
         case 'expired':
-            return 'Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up as soon as it does.';
+            return _('Claude Code login expired. Open Claude Code (run `claude` in a terminal) to renew it; the meter picks it up as soon as it does.');
         case 'rate-limited': {
             const left = formatDuration(this._state.nextTry - Date.now());
-            return `The usage API allows only a few calls per few minutes per account, shared with Claude Code. Next try in ${left ?? 'a moment'}.`;
+            return fmt(_('The usage API allows only a few calls per few minutes per account, shared with Claude Code. Next try in {left}.'), {left: left ?? _('a moment')});
         }
         case 'network':
-            return `Network error: ${error.message}`;
+            return fmt(_('Network error: {message}'), {message: error.message});
         default:
-            return `Could not fetch usage: ${error.message}`;
+            return fmt(_('Could not fetch usage: {message}'), {message: error.message});
         }
     }
 

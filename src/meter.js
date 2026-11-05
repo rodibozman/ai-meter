@@ -5,7 +5,8 @@ import Clutter from 'gi://Clutter';
 
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {formatDuration, formatResetClock} from './usage.js';
+import {_, fmt} from './i18n.js';
+import {formatDuration, formatResetClock, limitName} from './usage.js';
 import {isExhausted} from './polling.js';
 
 // St.BoxLayout's `vertical` is deprecated from GNOME 48 in favour of
@@ -95,16 +96,18 @@ class AiMeterMeterItem extends PopupMenu.PopupBaseMenuItem {
     }
 
     update(limit, sev, now) {
-        this._name.text = limit.name;
+        this._name.text = limitName(limit);
         this._pct.text = `${limit.percent}%`;
         setSeverityClass(this._pct, sev);
         this._bar.setValue(limit.percent, sev);
         const left = formatDuration(limit.resetsAt === null ? null : limit.resetsAt - now);
         const clock = formatResetClock(limit.resetsAt, now);
-        if (left === null)
-            this._reset.text = limit.locked ? 'Limit reached' : '';
-        else
-            this._reset.text = `${isExhausted(limit) ? 'Limit reached, resets' : 'Resets'} in ${left} (${clock})`;
+        if (left === null) {
+            this._reset.text = limit.locked ? _('Limit reached') : '';
+        } else {
+            const template = isExhausted(limit) ? _('Limit reached, resets in {left} ({clock})') : _('Resets in {left} ({clock})');
+            this._reset.text = fmt(template, {left, clock});
+        }
         this._reset.visible = this._reset.text !== '';
     }
 });

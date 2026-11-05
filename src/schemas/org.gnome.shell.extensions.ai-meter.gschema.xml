@@ -42,5 +42,9 @@
       <default>''</default>
       <summary>Path of Claude Code's credentials file (empty = ~/.claude/.credentials.json)</summary>
     </key>
+    <key name="language" type="s">
+      <default>''</default>
+      <summary>Language of the extension: a code with a translation ('en', 'fr', 'it'), or empty to follow the system</summary>
+    </key>
   </schema>
 </schemalist>
