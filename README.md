@@ -61,13 +61,13 @@ When the token expires, the bar shows `expired`: open Claude Code (run `claude` 
 
 ## Translations
 
-The texts are in English, Arabic, Bengali, Chinese (simplified), French, Hindi, Indonesian, Italian, Japanese, Portuguese (Brazil), Russian, Spanish, Turkish and Urdu, one gettext file per language in `src/po/`. Automatic picks the first system language with a translation; Portuguese from Portugal gets the Brazilian one, Traditional Chinese gets English. To add a language:
+The texts are in English, Arabic, Bengali, Chinese (simplified), French, Hindi, Indonesian, Italian, Japanese, Portuguese (Brazil), Russian, Spanish, Turkish and Urdu, one gettext file per language in `po/`. Automatic picks the first system language with a translation; Portuguese from Portugal gets the Brazilian one, Traditional Chinese gets English. To add a language:
 
-1. Copy `src/po/ai-meter.pot` to `src/po/<code>.po` (e.g. `de.po`) and fill in each `msgstr`, with any `.po` editor (Poedit, GNOME Translation Editor) or by hand.
+1. Copy `po/ai-meter.pot` to `po/<code>.po` (e.g. `de.po`) and fill in each `msgstr`, with any `.po` editor (Poedit, GNOME Translation Editor) or by hand.
 2. Add `['<code>', '<name of the language in that language>']` to `LANGUAGES` in `src/i18n.js`.
-3. Run `make test`: it checks that every text is translated and that each translation keeps its `{placeholders}`, `commands` and paths, and adds no link.
+3. Run `make locale`, which writes `src/locale/<code>.json`, the file the extension reads, then `make test`: it checks that every text is translated and that each translation keeps its `{placeholders}`, `commands` and paths, and adds no link.
 
-The extension reads these files itself rather than through GNOME's gettext, so that the Language setting can differ from the system language.
+The extension reads these translations itself rather than through GNOME's gettext, so that the Language setting can differ from the system language.
 
 ## Troubleshooting
 

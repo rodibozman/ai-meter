@@ -5,7 +5,7 @@ import Gtk from 'gi://Gtk';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {_, N_, LANGUAGES, pickLanguage, loadCatalogSync, setCatalog} from './i18n.js';
+import {_, N_, LANGUAGES, pickLanguage, catalogFile, parseCatalog, setCatalog} from './i18n.js';
 
 const DISPLAY_MODES = [
     ['percent', N_('Percentage')],
@@ -45,8 +45,10 @@ export default class AiMeterPreferences extends ExtensionPreferences {
 
     _loadTexts(settings) {
         const lang = pickLanguage(settings.get_string('language'), GLib.get_language_names());
+        // A synchronous read: the window runs in its own process, not in the
+        // Shell, and the page is built at once.
         try {
-            setCatalog(loadCatalogSync(this.path, lang));
+            setCatalog(lang === 'en' ? new Map() : parseCatalog(catalogFile(this.path, lang).load_contents(null)[1]));
         } catch (e) {
             console.warn(`[ai-meter] cannot read the ${lang} translation, using English: ${e.message}`);
             setCatalog(new Map());
