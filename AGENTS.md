@@ -14,7 +14,7 @@ Layout:
 - `src/meter.js`: the cairo bar and the meter row of the dropdown.
 - `src/polling.js`: the decisions of that loop (minimum gap, backoff, Retry-After, colour thresholds). No Shell import either.
 - `src/prefs.js` and `src/schemas/`: the settings window and its GSettings schema.
-- `src/i18n.js` and `src/po/`: the translations, one gettext `.po` file per language, and `ai-meter.pot`, the template. No Shell import either.
+- `src/i18n.js` and `po/`: the translations, one gettext `.po` file per language, and `ai-meter.pot`, the template. The extension reads them as JSON from `src/locale/`, which `make locale` builds with `tools/` and which is committed, so the package ships no `.po`. No Shell import either.
 - `install.sh`, `Makefile`, `.github/workflows/ci.yml`: install, checks, release.
 - `test/`: `parse.js`, `credentials.js`, `http.js` (local Soup server), `polling.js` and `i18n.js` run offline through `make test`; `fetch.js` calls the real endpoint by hand. `harness.js` is the shared assert/main.
 
@@ -59,11 +59,11 @@ No `Co-Authored-By` or tool trailers.
 - Target GNOME Shell 45 to 49. No API that only exists on one of them without a fallback. Check `shell-version` in `src/metadata.json` when you rely on something new.
 - Everything created in `enable()` or `_init()` is torn down in `disable()` or `destroy()`: timers (`GLib.source_remove`), signal handlers, the Soup session. A GNOME reviewer rejects leaks.
 - Follow the [EGO best practices](https://gjs.guide/extensions/review-guidelines/best-practices.html) reviewers check against: no `_destroyed`-style flags (cancel a `Gio.Cancellable` instead), no `?.`, `typeof` or `try` around calls that cannot fail, no comments that only restate the code, each class cleans up what it creates.
-- No synchronous I/O or spawning in the Shell process. `src/usage.js` is async end to end; keep it and `src/polling.js` free of Shell imports so `make test` keeps working. New behaviour in either gets a test in the matching `test/` file.
+- No synchronous I/O or spawning in the Shell process, including the modules it imports (`src/i18n.js`); only `src/prefs.js`, which runs in its own process, may read a file synchronously. `src/usage.js` is async end to end; keep it and `src/polling.js` free of Shell imports so `make test` keeps working. New behaviour in either gets a test in the matching `test/` file.
 - The usage endpoint rate-limits per account and Claude Code polls it too. Never fetch twice within 30 seconds, always honour `Retry-After`, keep showing the last good values on error.
 - Never write to the credentials file, never log the token, never add a network call to another host.
 - User-visible text is plain English, sentence case, no jargon from the API (`weekly_scoped` is "Weekly, Fable" to the user).
-- Every user-visible string is a literal inside `_()` (or `N_()` where it is defined and `_()` where it is shown), with `fmt()` and `{name}` placeholders instead of template literals. A new or changed string goes into `src/po/ai-meter.pot` and every `.po` in the same commit; `make test` fails until it does.
+- Every user-visible string is a literal inside `_()` (or `N_()` where it is defined and `_()` where it is shown), with `fmt()` and `{name}` placeholders instead of template literals. A new or changed string goes into `po/ai-meter.pot` and every `.po`, then `make locale`, in the same commit; `make test` fails until it does.
 - No runtime dependencies. `node_modules` is for the linter only; the extension ships as plain files.
 
 ## Settings

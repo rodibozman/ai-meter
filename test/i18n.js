@@ -1,9 +1,10 @@
-// Offline tests of src/i18n.js and of the translation files in src/po/:
-// `gjs -m test/i18n.js` from the repo root.
+// Offline tests of src/i18n.js, tools/po.js and of the translation files in
+// po/ and src/locale/: `gjs -m test/i18n.js` from the repo root.
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
-import {_, fmt, pickLanguage, parsePo, setCatalog, loadCatalog, loadCatalogSync, LANGUAGES} from '../src/i18n.js';
+import {_, fmt, pickLanguage, setCatalog, catalogFile, parseCatalog, loadCatalog, LANGUAGES} from '../src/i18n.js';
+import {parsePo, catalogJson} from '../tools/po.js';
 import {formatDuration, formatResetClock, limitName} from '../src/usage.js';
 import {assert, assertEqual, assertThrows, main} from './harness.js';
 
@@ -113,25 +114,37 @@ main(async () => {
     assert(parsePo('').size === 0, 'empty file');
     assert(parsePo('msgid "a"\r\nmsgstr "b"\r\n').get('a') === 'b', 'CRLF line ends');
 
+    // catalogJson and parseCatalog: what the extension reads is what parsePo read.
+    const json = catalogJson(po);
+    assert(json.endsWith('}\n') && json.includes('\n    "Refresh": "Actualiser",\n'), 'one translation per line');
+    assertEqual([...parseCatalog(new TextEncoder().encode(json)).entries()], [...po.entries()], 'JSON round trip, order kept');
+    assert(parseCatalog(new TextEncoder().encode(catalogJson(new Map()))).size === 0, 'empty catalog');
+
     // _() and the catalog.
     setCatalog(new Map([['Refresh', 'Actualiser']]));
     assert(_('Refresh') === 'Actualiser' && _('Settings') === 'Settings', 'translated, else English');
     setCatalog(new Map());
     assert(_('Refresh') === 'Refresh', 'empty catalog is English');
 
-    assert((await loadCatalog('src', 'en')).size === 0 && loadCatalogSync('src', 'en').size === 0, 'English has no file');
+    assert((await loadCatalog('src', 'en')).size === 0, 'English has no file');
     await assertThrows(() => loadCatalog('src', 'xx'), 'a missing file throws');
 
     // The translation files: the template lists every string of src/, each
-    // language translates all of them and keeps what must not change.
+    // language translates all of them and keeps what must not change, and
+    // src/locale/ holds exactly what `make locale` builds from po/.
     const ids = sourceMsgids();
     assert(ids.size > 50, `${ids.size} strings found in src/`);
-    const pot = parsePo(readText('src/po/ai-meter.pot').replace(/^msgstr ""$/gm, 'msgstr "-"'));
-    assertEqual([...pot.keys()].sort(), [...ids].sort(), 'src/po/ai-meter.pot lists exactly the strings of src/');
+    const pot = parsePo(readText('po/ai-meter.pot').replace(/^msgstr ""$/gm, 'msgstr "-"'));
+    assertEqual([...pot.keys()].sort(), [...ids].sort(), 'po/ai-meter.pot lists exactly the strings of src/');
+    const built = [];
+    const locale = Gio.File.new_for_path('src/locale').enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
+    for (let info = locale.next_file(null); info; info = locale.next_file(null))
+        built.push(info.get_name());
+    assertEqual(built.sort(), LANGUAGES.slice(1).map(([code]) => `${code}.json`).sort(), 'src/locale/ has one file per language, nothing else');
     for (const [code] of LANGUAGES.slice(1)) {
-        const catalog = parsePo(readText(`src/po/${code}.po`));
-        assertEqual(loadCatalogSync('src', code), catalog, `${code}: loadCatalogSync reads src/po/${code}.po`);
-        assertEqual([...(await loadCatalog('src', code)).entries()], [...catalog.entries()], `${code}: loadCatalog reads the same`);
+        const catalog = parsePo(readText(`po/${code}.po`));
+        assert(readText(`src/locale/${code}.json`) === catalogJson(catalog), `${code}: src/locale/${code}.json is up to date with po/${code}.po (run make locale)`);
+        assertEqual([...(await loadCatalog('src', code)).entries()], [...catalog.entries()], `${code}: loadCatalog reads the translations of po/${code}.po`);
         assertEqual([...ids].filter(id => !catalog.has(id)), [], `${code}: every string translated`);
         assertEqual([...catalog.keys()].filter(id => !ids.has(id)), [], `${code}: no unused string`);
         for (const [id, str] of catalog) {
@@ -142,7 +155,7 @@ main(async () => {
     }
 
     // Formatting in another language.
-    setCatalog(loadCatalogSync('src', 'fr'));
+    setCatalog(parseCatalog(catalogFile('src', 'fr').load_contents(null)[1]));
     assert(formatDuration((2 * 60 + 5) * 60000) === '2 h 05', 'French duration');
     assert(limitName({name: 'Weekly, Fable', scope: 'Fable'}) === 'Hebdomadaire, Fable', 'French scoped name keeps the model');
     assert(limitName({name: '5-hour window', scope: null}) === 'Fenêtre de 5 heures', 'French fixed name');

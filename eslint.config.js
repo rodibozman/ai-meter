@@ -9,7 +9,7 @@ const gjsGlobals = {
 export default [
     {ignores: ['dist/**', 'node_modules/**']},
     {
-        files: ['src/**/*.js', 'test/**/*.js', 'eslint.config.js'],
+        files: ['src/**/*.js', 'test/**/*.js', 'tools/**/*.js', 'eslint.config.js'],
         languageOptions: {ecmaVersion: 2022, sourceType: 'module', globals: gjsGlobals},
         rules: {
             'no-undef': 'error',
