@@ -2,7 +2,7 @@
 // temporary files: `gjs -m test/credentials.js` from the repo root.
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
-import {readCredentials, CredentialsWatcher, defaultCredentialsPath} from '../src/usage.js';
+import {readCredentials, CredentialsWatcher, defaultCredentialsPath, tokenId} from '../src/usage.js';
 import {assert, assertThrows, main} from './harness.js';
 
 const dir = GLib.dir_make_tmp('ai-meter-test-XXXXXX');
@@ -44,6 +44,8 @@ main(async () => {
         write({claudeAiOauth: {accessToken: 'sk-ant-oat01-abc', refreshToken: 'never-used', expiresAt: 1767225600000, subscriptionType: 'max', rateLimitTier: 'default_claude_max_5x'}});
         const c = await readCredentials(file);
         assert(c.accessToken === 'sk-ant-oat01-abc', 'access token read');
+        assert(c.tokenId === tokenId('sk-ant-oat01-abc') && c.tokenId.length === 64 && !c.tokenId.includes('abc'), 'token id is its SHA-256');
+        assert(tokenId('tok-a') !== tokenId('tok-b'), 'two tokens have two ids');
         assert(c.expiresAt === 1767225600000, 'expiresAt read as a number');
         assert(!('refreshToken' in c), 'refresh token is not exposed');
         write({claudeAiOauth: {accessToken: 'tok'}});
