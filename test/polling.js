@@ -1,7 +1,7 @@
 // Offline tests of src/polling.js, the decisions behind the refresh loop:
 // `gjs -m test/polling.js` from the repo root.
 import {
-    severity, isExhausted, panelLimit, fetchWait, retryAfterError, isCredentialsError, newPollState, pollTiming, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
+    severity, isExhausted, panelLimit, fetchWait, retryAfterError, isCredentialsError, isNewLogin, newPollState, pollTiming, initialDelay, MIN_FETCH_GAP_MS, MAX_BACKOFF_SECONDS,
     RATE_LIMIT_MIN_SECONDS,
 } from '../src/polling.js';
 import {assert, assertEqual, main} from './harness.js';
@@ -55,6 +55,8 @@ main(() => {
     assert(fetchWait({nextTry: now + 5_000, lastAttempt: now - 1_000}, now) === MIN_FETCH_GAP_MS - 1_000, 'the longer of gap and nextTry wins');
     assert(fetchWait({nextTry: now + 120_000, lastAttempt: now - 60_000}, now) === 120_000, 'nextTry in the future is honoured');
     assert(fetchWait({nextTry: now - 1, lastAttempt: now - MIN_FETCH_GAP_MS - 1}, now) === 0, 'past nextTry does not wait');
+    assert(fetchWait({nextTry: 0, lastAttempt: now - 10_000}, now, true) === 0, 'a new login skips the gap');
+    assert(fetchWait({nextTry: now + 5_000, lastAttempt: now - 10_000}, now, true) === 5_000, 'but not nextTry');
 
     // Rate limit: the longest of Retry-After, the interval, 300 s and twice
     // the backoff, and the wait becomes the new backoff.
@@ -109,4 +111,14 @@ main(() => {
     for (const kind of ['rate-limited', 'network', 'http', 'parse'])
         assert(!isCredentialsError({kind}), `${kind} is not a credentials error`);
     assert(!isCredentialsError(null) && !isCredentialsError({}), 'no error is not a credentials error');
+
+    // A rewritten file skips the minimum gap only with a token the API has
+    // not rejected yet.
+    assert(isNewLogin({kind: 'expired', tokenId: 'a'}, 'b'), 'another token after a 401 is a new login');
+    assert(!isNewLogin({kind: 'expired', tokenId: 'a'}, 'a'), 'the rejected token is not');
+    assert(!isNewLogin({kind: 'expired', tokenId: 'a'}, null), 'an unreadable file is not');
+    assert(isNewLogin({kind: 'no-credentials'}, 'a'), 'a token after no login is a new login');
+    assert(isNewLogin({kind: 'bad-credentials'}, 'a'), 'a token after a file without one is a new login');
+    for (const error of [null, {kind: 'rate-limited'}, {kind: 'network'}, {kind: 'http', tokenId: 'a'}])
+        assert(!isNewLogin(error, 'b'), `nothing to skip after ${error?.kind ?? 'success'}`);
 });

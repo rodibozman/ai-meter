@@ -5,7 +5,7 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Soup from 'gi://Soup';
-import {fetchUsage, USER_AGENT} from '../src/usage.js';
+import {fetchUsage, tokenId, USER_AGENT} from '../src/usage.js';
 import {assert, assertEqual, assertThrows, main} from './harness.js';
 
 const dir = GLib.dir_make_tmp('ai-meter-test-XXXXXX');
@@ -68,6 +68,7 @@ main(async () => {
         assert(e?.message.includes('login expired'), 'stale token message says the login expired');
         e = await assertThrows(() => fetchUsage(session, creds(Date.now() + 3600000), null, url), '401 with a fresh token is still "expired"', e => e.kind === 'expired');
         assert(e?.message === 'login rejected (HTTP 401)', 'fresh token message gives the status');
+        assert(e?.tokenId === tokenId('tok-123'), 'the error names the rejected token');
         reply = msg => respond(msg, 403, null);
         await assertThrows(() => fetchUsage(session, creds(), null, url), '403 is "expired"', e => e.kind === 'expired' && e.message.includes('403'));
 

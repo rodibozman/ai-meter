@@ -75,9 +75,11 @@ export function severity(percent, warn, crit) {
  * Milliseconds to wait before the next fetch is allowed, 0 when it can go
  * now. `state.nextTry` is the time a Retry-After or a backoff ends,
  * `state.lastAttempt` the time of the last call (both ms, 0 = never).
+ * `skipGap` drops the minimum gap (a new login, see isNewLogin).
  */
-export function fetchWait(state, now) {
-    return Math.max(0, state.nextTry - now, state.lastAttempt + MIN_FETCH_GAP_MS - now);
+export function fetchWait(state, now, skipGap = false) {
+    const gap = skipGap ? 0 : state.lastAttempt + MIN_FETCH_GAP_MS - now;
+    return Math.max(0, state.nextTry - now, gap);
 }
 
 // Failures that only the user can fix, by signing in to Claude Code: polled
@@ -90,6 +92,17 @@ const CREDENTIAL_KINDS = ['no-credentials', 'bad-credentials', 'expired'];
  */
 export function isCredentialsError(error) {
     return CREDENTIAL_KINDS.includes(error?.kind);
+}
+
+/**
+ * Whether the credentials file now holds a login the last fetch did not try:
+ * the last fetch failed on the login, and the token in the file (its tokenId,
+ * null when unreadable) is not the one the API rejected. Such a fetch skips
+ * the minimum gap, so the meter shows usage as soon as Claude Code renews its
+ * token; one call per new token, never a loop.
+ */
+export function isNewLogin(error, id) {
+    return isCredentialsError(error) && id !== null && id !== error.tokenId;
 }
 
 /**

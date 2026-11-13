@@ -20,8 +20,9 @@ export function defaultCredentialsPath() {
 /**
  * Error raised by this module. `kind` is one of:
  * 'no-credentials' (file missing or unreadable), 'bad-credentials'
- * (no OAuth token in it), 'expired' (server rejected the token),
- * 'rate-limited' (with `retryAfter` in seconds), 'http', 'network', 'parse'.
+ * (no OAuth token in it), 'expired' (server rejected the token, whose
+ * tokenId() is in `tokenId`), 'rate-limited' (with `retryAfter` in seconds),
+ * 'http', 'network', 'parse'.
  */
 export class UsageError extends Error {
     constructor(kind, message) {
@@ -32,11 +33,19 @@ export class UsageError extends Error {
 }
 
 /**
+ * A SHA-256 of an access token: tells two logins apart without keeping the
+ * token itself around.
+ */
+export function tokenId(accessToken) {
+    return GLib.compute_checksum_for_string(GLib.ChecksumType.SHA256, accessToken, -1);
+}
+
+/**
  * Reads Claude Code's credentials file.
  *
  * @param {string} path
  * @param {Gio.Cancellable} [cancellable]
- * @returns {Promise<{accessToken: string, expiresAt: number, plan: string}>}
+ * @returns {Promise<{accessToken: string, tokenId: string, expiresAt: number, plan: string}>}
  */
 export async function readCredentials(path, cancellable = null) {
     let bytes;
@@ -56,6 +65,7 @@ export async function readCredentials(path, cancellable = null) {
         throw new UsageError('bad-credentials', `${path} has no Claude login`);
     return {
         accessToken: oauth.accessToken,
+        tokenId: tokenId(oauth.accessToken),
         expiresAt: Number(oauth.expiresAt ?? 0),
         plan: planName(oauth.subscriptionType, oauth.rateLimitTier),
     };
@@ -262,9 +272,11 @@ export async function fetchUsage(session, credentialsPath, cancellable = null, u
     const status = msg.status_code;
     if (status === 401 || status === 403) {
         const stale = creds.expiresAt > 0 && Date.now() > creds.expiresAt;
-        throw new UsageError('expired', stale
+        const err = new UsageError('expired', stale
             ? 'Claude Code login expired: run claude in a terminal to renew it'
             : `login rejected (HTTP ${status})`);
+        err.tokenId = creds.tokenId;
+        throw err;
     }
     if (status === 429) {
         const retry = Number.parseInt(msg.response_headers.get_one('Retry-After') ?? '', 10);

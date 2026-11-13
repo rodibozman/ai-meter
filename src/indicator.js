@@ -10,10 +10,10 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {
-    fetchUsage, CredentialsWatcher, defaultCredentialsPath, formatDuration, USER_AGENT,
+    fetchUsage, readCredentials, CredentialsWatcher, defaultCredentialsPath, formatDuration, USER_AGENT,
 } from './usage.js';
 import {
-    severity, isExhausted, panelLimit, fetchWait, retryAfterError, isCredentialsError, initialDelay,
+    severity, isExhausted, panelLimit, fetchWait, retryAfterError, isCredentialsError, isNewLogin, initialDelay,
 } from './polling.js';
 import {Bar, MeterItem, setSeverityClass} from './meter.js';
 import {_, fmt} from './i18n.js';
@@ -152,9 +152,9 @@ class AiMeterIndicator extends PanelMenu.Button {
 
     // Claude Code renews its token (it lasts 8 hours) only when it runs, so
     // after a night off the meter shows `expired` until it does: fetch as
-    // soon as the file is rewritten instead of at the next refresh. Only
-    // while the last fetch failed on the login, so a working meter makes no
-    // extra calls.
+    // soon as the file is rewritten instead of at the next refresh, and
+    // without the minimum gap when the token is a new one. Only while the
+    // last fetch failed on the login, so a working meter makes no extra calls.
     _onCredentialsChanged() {
         if (this._refreshing) {
             this._credentialsChanged = true;
@@ -162,9 +162,24 @@ class AiMeterIndicator extends PanelMenu.Button {
         }
         if (!isCredentialsError(this._state.error))
             return;
-        // That wait was only there to see a new login; the minimum gap stays.
+        // That wait was only there to see a new login.
         this._state.nextTry = 0;
-        this._schedule(CREDENTIALS_SETTLE_SECONDS);
+        this._schedule(CREDENTIALS_SETTLE_SECONDS, true);
+    }
+
+    // Reads the rewritten file: a token other than the one the API rejected
+    // is fetched right away, the same one waits for the minimum gap.
+    async _refreshAfterLoginChange() {
+        const cancellable = this._cancellable;
+        let id = null;
+        try {
+            id = (await readCredentials(this._credentialsPath(), cancellable)).tokenId;
+        } catch {
+            // Missing or unusable: the refresh reports it.
+        }
+        if (cancellable.is_cancelled())
+            return;
+        this._refresh(isNewLogin(this._state.error, id));
     }
 
     // At login the first fetch often runs before the network is up and fails
@@ -178,27 +193,29 @@ class AiMeterIndicator extends PanelMenu.Button {
         this._schedule(NETWORK_SETTLE_SECONDS);
     }
 
-    _schedule(seconds) {
+    // `loginChanged`: the credentials file was rewritten after a login error.
+    _schedule(seconds, loginChanged = false) {
         if (this._timerId) {
             GLib.source_remove(this._timerId);
             this._timerId = 0;
         }
+        const run = () => loginChanged ? this._refreshAfterLoginChange() : this._refresh();
         if (seconds <= 0) {
-            this._refresh();
+            run();
             return;
         }
         this._timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, seconds, () => {
             this._timerId = 0;
-            this._refresh();
+            run();
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    async _refresh() {
+    async _refresh(skipGap = false) {
         if (this._refreshing)
             return;
         const now = Date.now();
-        const wait = fetchWait(this._state, now);
+        const wait = fetchWait(this._state, now, skipGap);
         if (wait > 0) {
             // Too soon (manual refresh spam, or a Retry-After still running).
             this._schedule(Math.ceil(wait / 1000));
@@ -232,13 +249,14 @@ class AiMeterIndicator extends PanelMenu.Button {
         } finally {
             this._refreshing = false;
         }
-        if (this._credentialsChanged && isCredentialsError(this._state.error)) {
+        const loginChanged = this._credentialsChanged && isCredentialsError(this._state.error);
+        if (loginChanged) {
             // The file was rewritten while this fetch used the old login.
             this._state.nextTry = 0;
             next = CREDENTIALS_SETTLE_SECONDS;
         }
         this._render();
-        this._schedule(next);
+        this._schedule(next, loginChanged);
     }
 
     _render() {
